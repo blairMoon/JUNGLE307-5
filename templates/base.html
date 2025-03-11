@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Jungle Helper{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@picocss/pico@1.*/css/pico.min.css"
+    />
+    <!-- Montserrat 구글폰트 로딩 -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap"
+      rel="stylesheet"
+    />
+
+    <script
+      src="https://kit.fontawesome.com/211cb44f9c.js"
+      crossorigin="anonymous"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/headerStyle.css') }}"
+    />
+  </head>
+
+  <body>
+    <header>
+      <div class="nav-left">
+        <a href="/" class="contrast">
+          <img
+            class="logo"
+            src="{{ url_for('static', filename='images/logo2.png') }}"
+            alt="로고"
+          />Jungle Helper</a
+        >
+      </div>
+
+      <div class="nav-center">
+        <a href="/posts?category=all">전체</a>
+        <a href="/posts?category=give">나눔해요</a>
+        <a href="/posts?category=need">필요해요</a>
+      </div>
+
+      <div class="nav-right">
+        <a href="/mypage" aria-label="마이페이지" class="mypage">
+          <i class="fas fa-user"></i>
+        </a>
+        <a href="/logout" aria-label="로그아웃" class="logout">
+          <i class="fas fa-sign-out-alt"></i>
+        </a>
+      </div>
+    </header>
+
+    <main class="container">{% block content %}{% endblock %}</main>
+  </body>
+</html>
