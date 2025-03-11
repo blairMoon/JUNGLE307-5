@@ -132,11 +132,6 @@ def login():
 
     return jsonify({"message": "로그인 성공!", "token": token}), 200
 
-<<<<<<< HEAD
-
-=======
-#
->>>>>>> b8caf1af5a9d40e159c17b0079e797c172ec4fe9
 
 if __name__ == "__main__":
     app.run(debug=True, port=5001)
