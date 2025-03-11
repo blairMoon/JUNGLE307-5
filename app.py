@@ -7,7 +7,6 @@ import jwt  # PyJWT: JWT 토큰 생성 및 검증
 from functools import wraps
 from flask import Flask, render_template, request, jsonify , redirect, url_for ,send_from_directory
 from pymongo import MongoClient  # MongoDB 연결
-from PIL import Image  # Pillow: 이미지 처리
 from werkzeug.utils import secure_filename  # 파일 명 암호화
 
 app = Flask(__name__)  # Flask 앱 생성
@@ -109,6 +108,11 @@ def jwt_required(f):
 @app.route("/")
 def home():
     return render_template("index.html")
+
+# Base
+@app.route("/base")
+def base():
+    return render_template("base.html")
 
 ######################################## 회원가입, 로그인  ########################################
 
