@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}Jungle Helper{% endblock %}</title>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/@picocss/pico@1.*/css/pico.min.css"
+    />
+    <script
+      src="https://kit.fontawesome.com/yourkit.js"
+      crossorigin="anonymous"
+    ></script>
+    <style>
+      header {
+        display: flex;
+        flex-wrap: wrap; /* 줄 바꿈 허용 */
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+      }
+
+      .nav-left,
+      .nav-center,
+      .nav-right {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      /* 가운데 카테고리: 기본 가로 정렬, 작은 화면에서는 세로 */
+      .nav-center {
+        flex-grow: 1;
+        justify-content: center;
+        flex-wrap: wrap;
+        text-align: center;
+      }
+
+      .nav-center a {
+        font-weight: bold;
+      }
+
+      @media (max-width: 768px) {
+        header {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .nav-left,
+        .nav-center,
+        .nav-right {
+          justify-content: flex-start;
+        }
+
+        .nav-center {
+          flex-direction: column;
+          align-items: flex-start;
+        }
+
+        .nav-right {
+          align-self: flex-end;
+        }
+      }
+
+      main.container {
+        max-width: 1000px;
+        margin: auto;
+        padding: 2rem;
+      }
+    </style>
+  </head>
+
+  <body>
+    <header>
+      <!-- 왼쪽: 로고 -->
+      <div class="nav-left">
+        <a href="/" class="contrast">Jungle Helper</a>
+      </div>
+
+      <!-- 가운데: 카테고리 -->
+      <div class="nav-center">
+        <a href="/posts?category=all">전체</a>
+        <a href="/posts?category=give">나눔해요</a>
+        <a href="/posts?category=need">필요해요</a>
+      </div>
+
+      <!-- 오른쪽: 마이페이지, 로그아웃 -->
+      <div class="nav-right">
+        <a href="/mypage" aria-label="마이페이지">
+          <i class="fas fa-user"></i>
+        </a>
+        <a href="/logout" aria-label="로그아웃">
+          <i class="fas fa-sign-out-alt"></i>
+        </a>
+      </div>
+    </header>
+
+    <main class="container">{% block content %}{% endblock %}</main>
+  </body>
+</html>
