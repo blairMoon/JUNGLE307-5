@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>회원가입</title>
+
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/register.css') }}"
+    />
+  </head>
+
+  <body>
+    {% with messages = get_flashed_messages() %} {% if messages %}
+    <script>
+      alert("{{ messages[0] }}");
+    </script>
+    {% endif %} {% endwith %}
+    <div class="box">
+      <div class="signup-container">
+        <img
+          src="{{ url_for('static', filename='images/logo2.png') }}"
+          alt="로고"
+          class="logo"
+        />
+        <h1 class="title">회원가입</h1>
+        <form action="{{ url_for('register') }}" method="POST" class="form-now">
+          <!-- 🔥 에러 메시지 -->
+          <!-- {% if error %}
+          <p class="error-message">{{ error }}</p>
+          {% endif %} -->
+
+          <div class="select-box-container">
+            <select name="lab_name" class="select-box" required>
+              <option value="" disabled selected>랩 네임 선택</option>
+              <option value="정글">정글</option>
+              <option value="게임랩">게임랩</option>
+              <option value="게임테크랩">게임테크랩</option>
+            </select>
+            <input
+              type="text"
+              name="cohort_name"
+              class="text-input"
+              placeholder="기수명 입력 EX) 8기-76"
+              required
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="student_name">이름</label>
+            <input
+              type="text"
+              name="student_name"
+              class="text-input-label"
+              placeholder="이름을 입력하세요"
+              required
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="password">비밀번호</label>
+            <input
+              type="password"
+              name="password"
+              class="text-input-label"
+              placeholder="비밀번호를 입력하세요"
+              required
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="password_confirm">비밀번호 확인</label>
+            <input
+              type="password"
+              name="password_confirm"
+              class="text-input-label"
+              placeholder="비밀번호 확인"
+              required
+            />
+          </div>
+
+          <button type="submit" class="submit-btn">가입하기</button>
+        </form>
+      </div>
+    </div>
+  </body>
+</html>

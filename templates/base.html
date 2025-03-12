@@ -17,6 +17,7 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/headerStyle.css') }}"
     />
+    {% block extra_css %}{% endblock %}
   </head>
 
   <body>
@@ -32,21 +33,66 @@
       </div>
 
       <div class="nav-center">
-        <a href="/posts?category=all">전체</a>
-        <a href="/posts?category=give">나눔해요</a>
-        <a href="/posts?category=need">필요해요</a>
+        <a href="/posts?category=all" class="category-link" data-category="all"
+          >전체</a
+        >
+        <a
+          href="/posts?category=give"
+          class="category-link"
+          data-category="give"
+          >나눔해요</a
+        >
+        <a
+          href="/posts?category=need"
+          class="category-link"
+          data-category="need"
+          >필요해요</a
+        >
       </div>
 
       <div class="nav-right">
         <a href="/mypage" aria-label="마이페이지" class="mypage">
           <i class="fas fa-user"></i>
         </a>
-        <a href="/logout" aria-label="로그아웃" class="logout">
+        <a href="#" id="logout-btn" aria-label="로그아웃" class="logout">
           <i class="fas fa-sign-out-alt"></i>
         </a>
       </div>
     </header>
 
     <main class="container">{% block content %}{% endblock %}</main>
+
+    <!-- 📌 모든 스크립트는 여기 아래에!! -->
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="{{ url_for('static', filename='js/categoryFilter.js') }}"></script>
+    <script>
+      const baseURL = "http://127.0.0.1:5001/";
+
+      $(document).ready(function () {
+        $("#logout-btn").on("click", function (e) {
+          e.preventDefault();
+
+          $.ajax({
+            url: `${baseURL}logout`,
+            type: "POST",
+            xhrFields: {
+              withCredentials: true,
+            },
+            success: function (response) {
+              alert("또 와주세요~!");
+              window.location.href = "/";
+            },
+            error: function (xhr, status, error) {
+              alert("로그아웃 중 오류가 발생했습니다.");
+              console.error("❌ Logout Error:", error);
+            },
+          });
+        });
+      });
+    </script>
+
+    {% block extra_js %}{% endblock %}
   </body>
 </html>
