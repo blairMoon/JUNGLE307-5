@@ -1,0 +1,187 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+:root {
+  --main-color: #012754;
+  --light-blue-1: #e3eaf6;
+  --light-blue-2: #c5d4ee;
+  --light-blue-3: #a8bfe5;
+  --gray: #f5f5f5;
+  --text-color: #333;
+}
+body {
+  font-family: "Montserrat", sans-serif;
+  color: #333;
+}
+.write-btn-wrap {
+  display: flex;
+  justify-content: flex-end; /* 왼쪽 정렬 */
+  margin: 0.5rem 1rem; /* 위아래 간격 (선택) */
+}
+.write-btn {
+  background-color: var(--main-color); /* 진한 남색 */
+  color: white;
+  border: none;
+  padding: 0.6rem 1.2rem;
+  font-size: 1rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+}
+
+.write-btn:hover {
+  opacity: 0.6;
+}
+
+.write-btn:active {
+  transform: scale(0.98);
+}
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 3rem;
+  max-width: 1440px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+/* 카드 전체 */
+.card {
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.08);
+  transition: transform 0.25s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  flex-grow: 1;
+  min-height: 24rem; /* ✅ 카드 높이를 부드럽게 늘림 */
+}
+.card-title-wrp {
+  display: flex;
+  justify-content: space-between;
+}
+/* 카드 이미지 */
+.card img {
+  border-radius: 12px;
+  border: 1px solid #e2e2e2;
+  /* border: 1px solid black; */
+
+  width: 100%;
+  height: 200px;
+  object-fit: cover;
+}
+
+/* 카드 본문 */
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.8rem;
+}
+
+/* 제목 */
+.card-title {
+  font-size: 1.3rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+.card-link {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+/* 뱃지 묶음 */
+.badges {
+  margin-top: 6px;
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: space-between;
+}
+/* .card-title-wrp {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+} */
+/* 뱃지 스타일 */
+.badge {
+  font-size: 0.75rem;
+  padding: 0.3em 0.6em;
+  border-radius: 6px;
+  font-weight: 600;
+  color: white;
+}
+
+.badge.category.give {
+  background-color: #615dc8; /* 초록 */
+  opacity: 0.9;
+}
+.badge.category.need {
+  background-color: #f44336; /* 빨강 */
+}
+
+.badge.status.ongoing {
+  background-color: #71a8fb; /* 파랑 */
+}
+.badge.status.done {
+  background-color: #9e9e9e; /* 회색 */
+}
+
+/* 가격 표시 */
+.price {
+  font-size: 1.2rem;
+  font-weight: 500;
+  color: #444;
+}
+
+/* 작성자 & 날짜 */
+.meta {
+  margin-top: 20px !important;
+  font-size: 1rem;
+  color: #888;
+  font-weight: 400;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* hover 효과 */
+.card:hover {
+  transform: translateY(-6px);
+}
+.badge.category.give {
+  background-color: #615dc8; /* 초록 */
+  margin-right: 3px;
+}
+
+.badge.category.take {
+  background-color: #49ae76; /* 빨강 */
+  margin-right: 3px;
+}
+.pagination {
+  margin-bottom: 4rem;
+  text-align: center;
+  margin-top: 3rem;
+}
+
+.pagination button {
+  font-size: 1rem;
+  margin: 0 4px;
+  padding: 6px 12px;
+  border: none;
+  background: white;
+  cursor: pointer;
+  border-radius: 50%;
+}
+
+.pagination button.active {
+  background-color: #00387f;
+  opacity: 0.8;
+  color: white;
+  font-weight: bold;
+  border: 1px solid #00387f;
+}

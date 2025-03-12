@@ -7,7 +7,7 @@ from flask import Flask, render_template, request, jsonify
 from pymongo import MongoClient  # MongoDB 연결
 from PIL import Image  # Pillow: 이미지 처리
 import io  # 이미지 파일 처리를 위한 io 모듈
-
+import json
 app = Flask(__name__)  # Flask 앱 생성
 app.config["SECRET_KEY"] = "JUNGLEKRAFTONWEEKZEROJUNGLEKRAFTONWEEKZERO"
 
@@ -31,12 +31,43 @@ def generate_jwt(student_name):
     }
     token = jwt.encode(payload, app.config["SECRET_KEY"], algorithm="HS256")  # HS256 알고리즘 사용
     return token
+import json
+from flask import Flask, render_template, abort
 
-# 메인 페이지
+app = Flask(__name__)
+
+# ✅ JSON 파일 한 번만 로딩
+with open("mock_data_30.txt", "r", encoding="utf-8") as f:
+    response = json.load(f)
+    mock_posts = response.get("posts", [])
+
+print("📦 JSON 로딩 성공! posts 개수:", len(mock_posts))
+
+
+# ✅ 메인 페이지 (전체 리스트)
 @app.route("/")
 def home():
-    return render_template("base.html", title="week00", message="MainPage")
+    return render_template(
+        "post/list.html", 
+        title="week00",
+        message="MainPage",
+        posts=mock_posts
+    )
 
+@app.route("/create")
+def create():
+    return render_template(
+        "post/create.html"
+        
+    )
+# ✅ 상세 페이지
+@app.route("/post/<int:post_id>")
+def post_detail(post_id):
+    # id가 문자열일 수도 있어서 int로 캐스팅
+    post = next((post for post in mock_posts if int(post["id"]) == post_id), None)
+    if post is None:
+        abort(404)
+    return render_template("post/detail.html", post=post)
 # 회원가입 메소드
 @app.route("/api/auth/signup", methods=["POST"])
 def register():
