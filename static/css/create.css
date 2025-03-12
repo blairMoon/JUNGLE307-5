@@ -117,3 +117,72 @@ input[type="file"] {
 .custom-file-btn:hover {
   opacity: 0.8;
 }
+
+/* 이미지 상자 스타일 */
+.image-box {
+  width: 60%;  /* 가로 60%로 설정 */
+  height: 150px;  /* 고정된 높이 */
+  border: 1px solid var(--light-blue-3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+.image-box img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
+}
+
+/* 텍스트 상자 스타일 */
+input[type="text"] {
+  width: 95%;
+  padding: 8px;
+  border: 1px solid var(--light-blue-3);
+  border-radius: 4px;
+  font-size: 14px;
+}
+
+/* "원" 텍스트 스타일 */
+.image-div span {
+  font-size: 14px;
+  color: var(--main-color);
+}
+
+/* 무료나눔 체크박스 스타일 */
+.free-label {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* 체크박스 스타일 */
+input[type="checkbox"] {
+  width: auto;
+}
+
+/* 가격 입력란 비활성화 스타일 */
+input:disabled {
+  background-color: #e3eaf6;
+}
+
+/* 가격 입력란과 "무료나눔" 체크박스를 같은 줄에 배치 */
+.price-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 60%;
+}
+
+/* 설명 텍스트 상자 스타일 */
+input[type="text"].description-input {
+  width: 95%;
+  padding: 8px;
+  border: 1px solid var(--light-blue-3);
+  border-radius: 4px;
+  font-size: 14px;
+  height: 100px; /* 높이를 키워주기 */
+  resize: vertical; /* 사용자가 크기를 조정할 수 있도록 */
+}

@@ -18,7 +18,7 @@ app.config["SECRET_KEY"] = "JUNGLEWEEKZEROJUNGLEWEEKZEROJUNGLEWEEKZERO"
 # Blueprint 등록
 @app.route("/")
 def home():
-    return render_template("auth/login.html", title="week00", message="MainPage")
+    return render_template("post/create.html", title="week00", message="MainPage")
 
 COHORT_PATTERN = re.compile(r'^[0-9]{1,2}기-[0-9]{2}$')
 PASSWORD_PATTERN = re.compile(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$')
@@ -164,7 +164,7 @@ def login_page():
 
 def register():
     if request.method == "GET":
-        return render_template("register.html")
+        return render_template("auth/register.html")
 
     # ✅ POST 요청일 때만 실행
     lab_name = request.form.get("lab_name")

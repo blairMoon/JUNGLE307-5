@@ -40,19 +40,63 @@
       <div class="empty-space"></div>
     </div>
 
-    <!-- 세 번째 줄: 이미지 박스 -->
+    <!-- 세 번째 줄: 이미지 박스, 텍스트는 비워둠 -->
     <div class="image-div">
-      <label for="image">이미지</label>
-      <div class="custom-file-btn-container">
-        <label for="image" class="custom-file-btn">이미지 선택하기</label>
-        <input type="file" id="image" name="image" accept="image/*" hidden />
+      <label for="image"></label> <!-- 텍스트 제거, 비워두기 -->
+      <div class="image-box">
+        <img id="image-preview" src="" alt="이미지 미리보기" />
       </div>
       <div class="empty-space"></div>
     </div>
+
+    <!-- 네 번째 줄: 가격 + 무료나눔 체크박스 -->
+    <div class="image-div">
+      <label for="price">가격</label>
+      <div class="price-container">
+        <input type="text" id="price" name="price" placeholder="가격을 입력하세요" />
+        <span>원</span>
+        <label for="free" class="free-label">무료
+          <input type="checkbox" id="free" name="free" />
+        </label>
+      </div>
+      <div class="empty-space"></div>
+    </div>
+
+    <!-- 다섯 번째 줄: 설명 텍스트 입력 상자 -->
+    <div class="image-div">
+      <label for="description">설명</label>
+      <div class="custom-file-btn-container">
+        <input type="text" id="description" name="description" placeholder="설명을 입력하세요" class="description-input" />
+      </div>
+      <div class="empty-space"></div>
+    </div>
+
   </form>
 </div>
 {% endblock %}
 
 {% block extra_js %}
 <script src="{{ url_for('static', filename='js/postForm.js') }}"></script>
+<script>
+  // "무료나눔" 체크박스를 클릭했을 때 가격 입력란을 비활성화
+  document.getElementById("free").addEventListener("change", function() {
+    const priceInput = document.getElementById("price");
+    if (this.checked) {
+      priceInput.disabled = true;
+      priceInput.value = ""; // 체크 시 가격 입력란 초기화
+    } else {
+      priceInput.disabled = false;
+    }
+  });
+
+  // 이미지 미리보기
+  document.getElementById("image").addEventListener("change", function(event) {
+    const file = event.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById("image-preview").src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+</script>
 {% endblock %}
