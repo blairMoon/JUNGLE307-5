@@ -5,12 +5,13 @@ import bcrypt # 비밀번호 암호화
 from bson import ObjectId
 import jwt  # PyJWT: JWT 토큰 생성 및 검증
 from functools import wraps
-from flask import Flask, render_template, request, jsonify , redirect, url_for ,send_from_directory
+from flask import Flask, render_template, request, jsonify , redirect, url_for ,send_from_directory, make_response
+
 from pymongo import MongoClient  # MongoDB 연결
 from werkzeug.utils import secure_filename  # 파일 명 암호화
-
 app = Flask(__name__)  # Flask 앱 생성
-app.config["SECRET_KEY"] = "JUNGLEKRAFTONWEEKZEROJUNGLEKRAFTONWEEKZERO"
+app.config["SECRET_KEY"] = "JUNGLEWEEKZEROJUNGLEWEEKZEROJUNGLEWEEKZERO"
+
 UPLOAD_FOLDER = "uploads"
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
@@ -56,6 +57,28 @@ def parse_request_data():
 
     return data, None, None  # 정상적인 데이터 반환
 
+# JWT 인증 데코레이터
+def jwt_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        token = request.cookies.get("access_token")  # ✅ 쿠키에서 JWT 가져오기
+        if not token:
+            return jsonify({"message": "로그인이 필요합니다."}), 401
+
+        try:
+            payload = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
+            request.user = payload  # ✅ 현재 사용자 정보 저장
+        except jwt.ExpiredSignatureError:
+            return jsonify({"message": "토큰이 만료되었습니다. 다시 로그인하세요."}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({"message": "유효하지 않은 토큰입니다."}), 401
+
+        return f(*args, **kwargs)
+    return decorated_function
+
+# ✅ 현재 로그인한 사용자 정보 가져오기
+def get_jwt_identity():
+    return request.user["userId"] if hasattr(request, "user") else None
 
 
 # MongoDB 연결
@@ -81,152 +104,286 @@ def generate_jwt(student_name):
     token = jwt.encode(payload, app.config["SECRET_KEY"], algorithm="HS256")  # HS256 알고리즘 사용
     return token
 
-# JWT 인증 데코레이터 추가
-def jwt_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        token = request.headers.get("Authorization")  # JWT를 Authorization 헤더에서 가져옴
-        if not token:
-            return jsonify({"message": "인증이 필요합니다. 로그인 후 이용해주세요."}), 401
-
-        try:
-            token = token.split(" ")[1]  # "Bearer {token}" 형태에서 토큰만 추출
-            payload = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
-            request.user = payload  #  현재 사용자 정보 저장
-        except jwt.ExpiredSignatureError:
-            return jsonify({"message": "토큰이 만료되었습니다. 다시 로그인하세요."}), 401
-        except jwt.InvalidTokenError:
-            return jsonify({"message": "유효하지 않은 토큰입니다."}), 401
-
-        return f(*args, **kwargs)
-    
-    return decorated_function
 
 
+# SSR 사용 : 게시글 조회, 로그인, 회원가입, 상세페이지 조회, 마이페이지 조회
+# CSR 사용 : 댓글, 대댓글
+# token : refreshToken, AccessToken 사용 
 
-@app.route("/mypage")
-def mypage():
-    return render_template("/mypage/mypage.html")
+# @app.route("/mypage")
+# def mypage():
+#     return render_template("/mypage/mypage.html")
 
-@app.route("/main")
-def home():
-    return render_template("main.html")
 
-# 메인 페이지
-@app.route("/")
-def test():
-    return render_template("index.html")
 
 # Base
 @app.route("/base")
 def base():
     return render_template("base.html")
 
-@app.route("/post/<post_id>")
-def post_detail_page(post_id):
-    # ✅ URL에 토큰이 포함되었더라도 무시하고, 로그인한 사용자 정보는 요청 헤더에서 처리
-    return render_template("/post/detailTest.html", post_id=post_id)
+######################################## 회원가입 & 로그인 (SSR) ########################################
 
-######################################## 회원가입, 로그인  ########################################
+# ✅ 회원가입 페이지 렌더링
+@app.route("/signup")
+def signup_page():
+    return render_template("/auth/signup.html")
 
-# 회원가입 메소드
+# ✅ 로그인 페이지 렌더링
+@app.route("/login")
+def login_page():
+    return render_template("/auth/login.html")
+
+# ✅ 회원가입 (SSR)
 @app.route("/api/auth/signup", methods=["POST"])
 def register():
-    data = request.get_json()  # 안전하게 JSON 데이터 가져오기
-    lab_name = data.get("lab_name") # 랩 명
-    cohort_name = data.get("cohort_name") # 기수 명(번호)
-    password = data.get("password") # 비밀번호
-    password_confirm = data.get("password_confirm")  # 추가된 필드
-    student_name = data.get("student_name") # 이름
+    lab_name = request.form.get("lab_name")
+    cohort_name = request.form.get("cohort_name")
+    student_name = request.form.get("student_name")
+    password = request.form.get("password")
+    password_confirm = request.form.get("password_confirm")
 
-    # 필수 데이터 확인
     if not (lab_name and cohort_name and password and password_confirm and student_name):
-        return jsonify({"message": "모든 필드를 입력해주세요"}), 400
-    
-    # 이름 필드 확인
-    if not student_name:
-        return jsonify({"message": "이름을 입력해주세요"}), 400
+        return render_template("signup.html", error="❌ 모든 필드를 입력해주세요.")
 
-    # 비밀번호 & 비밀번호 확인 일치 여부 체크
     if password != password_confirm:
-        return jsonify({"message": "비밀번호가 일치하지 않습니다."}), 400
+        return render_template("signup.html", error="❌ 비밀번호가 일치하지 않습니다.")
 
-    # 기수명(cohort_name) 형식 검증
-    if not GISU_PATTERN.match(cohort_name):
-        return jsonify({"message": "유효하지 않은 기수명 형식입니다."}), 400
-    
-    # 비밀번호 형식 검증
-    if not PASSWORD_PATTERN.match(password):
-        return jsonify({"message": "비밀번호는 영문 + 숫자 조합 8자 이상이어야 합니다."}), 400
-
-    
-    # 유저 중복 확인 (닉네임 중복 체크)
-    nickname = f"{lab_name} {cohort_name}"  # 닉네임 생성
+    nickname = f"{lab_name} {cohort_name}"
     if users_collection.find_one({"nickname": nickname}):
-        return jsonify({"message": "이미 사용중인 닉네임(기수명)입니다"}), 400
-    
-    # 비밀번호 해싱 (bcrypt 사용)
+        return render_template("signup.html", error="❌ 이미 사용중인 닉네임(기수명)입니다.")
+
     hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
-
-    # MongoDB 저장
-    user_data= {
-        "lab_name" : lab_name,
-        "cohort_name" : cohort_name,
-        "student_name" : student_name,
+    users_collection.insert_one({
+        "lab_name": lab_name,
+        "cohort_name": cohort_name,
+        "student_name": student_name,
         "nickname": nickname,
-        "password" : hashed_password
-    }
-    users_collection.insert_one(user_data)
+        "password": hashed_password
+    })
 
-    return jsonify({"message" : "회원가입 성공 !"}), 200
-    
+    return redirect(url_for("/login"))
 
-
-# 로그인 메소드
+# ✅ 로그인 (SSR)
 @app.route("/api/auth/login", methods=["POST"])
 def login():
-    data = request.get_json()  # 요청에서 JSON 데이터 가져오기
-    lab_name = data.get("lab_name")
-    cohort_name = data.get("cohort_name")
-    password = data.get("password")
+    lab_name = request.form.get("lab_name")
+    cohort_name = request.form.get("cohort_name")
+    password = request.form.get("password")
 
-    # 유저 검색 (userId = userType + userNumber)
     user = users_collection.find_one({"lab_name": lab_name, "cohort_name": cohort_name})
-    
-    # 랩 명 입력값 확인
-    if not lab_name:
-        return jsonify({"message": "랩 명을 선택해주세요"}), 400
-    
-    # 기수명 입력값 확인
-    if not cohort_name:
-        return jsonify({"message": "기수명을 입력해주세요. 기수명 형식은 (숫자)+기- +(숫자) 입니다"}), 400
+    if not user or not bcrypt.checkpw(password.encode("utf-8"), user["password"]):
+        return render_template("login.html", error="❌ 아이디 또는 비밀번호가 잘못되었습니다.")
 
-    # 기수명(cohort_name) 형식 검증
-    if not GISU_PATTERN.match(cohort_name):
-        return jsonify({"message": "유효하지 않은 기수명 형식입니다."}), 400
-    
-    # 유저 검증
-    if not user:
-        return jsonify({"message": "존재하지 않는 계정입니다"}), 401
-    
-    # 패스워드 입력값 검증
-    if not password:
-        return jsonify({"message": "비밀번호를 입력해주세요"}), 401
-
-    # 비밀번호 검증
-    if not bcrypt.checkpw(password.encode("utf-8"), user["password"]):
-        return jsonify({"message": "비밀번호가 틀렸습니다"}), 401
-
-    # JWT 토큰 생성
-    payload = {
-        "userId": str(user["_id"]),  # 고유한 사용자 ID (MongoDB ObjectId)
-        "nickname": f"{lab_name} {cohort_name}",  # 사용자의 표시 이름 (닉네임)
-        "student_name": user["student_name"],  # 사용자 이름
-        "exp": datetime.datetime.now() + datetime.timedelta(hours=1)  # 토큰 만료 시간
+    # ✅ JWT 토큰 생성 (직접 생성)
+    access_payload = {
+        "userId": str(user["_id"]),
+        "nickname": f"{lab_name} {cohort_name}",
+        "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1)  # AccessToken: 1시간
     }
-    token = jwt.encode(payload, app.config["SECRET_KEY"], algorithm="HS256")
+    refresh_payload = {
+        "userId": str(user["_id"]),
+        "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=7)  # RefreshToken: 7일
+    }
 
-    return jsonify({"message": "로그인 성공!", "token": token}), 200
+    access_token = jwt.encode(access_payload, app.config["SECRET_KEY"], algorithm="HS256")
+    refresh_token = jwt.encode(refresh_payload, app.config["SECRET_KEY"], algorithm="HS256")
+
+    # ✅ RefreshToken을 DB에 저장
+    users_collection.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"refresh_token": refresh_token}}
+    )
+
+    # ✅ 응답에 쿠키 저장 (HTTP-Only)
+    response = make_response(redirect(url_for("main_page")))
+    response.set_cookie("access_token", access_token, httponly=True, max_age=3600)
+    response.set_cookie("refresh_token", refresh_token, httponly=True, max_age=604800)
+
+    return response
+
+
+### ✅ 로그아웃 (쿠키 삭제)
+@app.route("/api/auth/logout", methods=["POST"])
+def logout():
+    response = make_response(jsonify({"message": "로그아웃 성공!"}), 200)
+    response.set_cookie("access_token", "", expires=0)
+    response.set_cookie("refresh_token", "", expires=0)
+    return response
+
+
+### ✅ 토큰 인증 미들웨어 (SSR에서 사용)
+def get_current_user():
+    token = request.cookies.get("access_token")
+    if not token:
+        return None
+
+    try:
+        decoded = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
+        user = users_collection.find_one({"_id": ObjectId(decoded["userId"])})
+        return user
+    except jwt.ExpiredSignatureError:
+        return None  # 토큰 만료
+    except jwt.InvalidTokenError:
+        return None  # 유효하지 않은 토큰
+
+
+@app.route("/")
+def main_page():
+    try:
+        # ✅ 로그인 여부 확인 (쿠키에서 access_token 가져오기)
+        access_token = request.cookies.get("access_token")
+        user_info = None
+
+        if access_token:
+            try:
+                payload = jwt.decode(access_token, app.config["SECRET_KEY"], algorithms=["HS256"])
+                user_info = {
+                    "nickname": payload.get("nickname","익명"),
+                    "userId": payload["userId"]
+                }
+            except jwt.ExpiredSignatureError:
+                user_info = None  # 토큰 만료 시 로그아웃 처리
+
+        # ✅ 카테고리 필터링 및 페이지네이션 처리
+        category = request.args.get("category", "전체")  # 기본값: 전체
+        page = int(request.args.get("page", 1))
+        limit = 9
+        skip = (page - 1) * limit
+
+        query = {} if category == "전체" else {"category": category}  # ✅ 한글 필드 유지
+        posts_cursor = posts_collection.find(query).sort("created_at", -1).skip(skip).limit(limit)
+        total_count = posts_collection.count_documents(query)
+
+        posts = []
+        for post in posts_cursor:
+            posts.append({
+                "id": str(post["_id"]),
+                "title": post["title"],
+                "image_url": post.get("image_url", "/static/images/noimage.png"),  # 기본 이미지 적용
+                "category": post["category"],  # ✅ 한글 그대로 사용
+                "status": "진행 중" if post["status"] else "완료",
+                "price": "무료" if post["price"] == 0 else f"{post['price']}원",
+                "created_at": post["created_at"].strftime("%Y-%m-%d"),
+                "nick_name": post["nickname"]
+            })
+
+        return render_template(
+            "main.html",
+            posts=posts,
+            total_count=total_count,
+            current_category=category,  # ✅ 한글 카테고리 그대로 사용
+            user_info=user_info
+        )
+
+    except Exception as e:
+        print(f"❌ [ERROR] 메인 페이지 로드 실패: {str(e)}")
+        return jsonify({"error": "서버 내부 오류 발생", "details": str(e)}), 500
+    
+@app.route("/posts/<post_id>")
+@jwt_required  # ✅ 직접 구현한 JWT 인증 데코레이터 사용
+def get_post_detail(post_id):
+    try:
+        user_id = get_jwt_identity()  # ✅ 현재 로그인한 사용자 ID 가져오기
+
+        if not ObjectId.is_valid(post_id):
+            return jsonify({"message": "잘못된 게시글 ID입니다."}), 400
+
+        post = posts_collection.find_one({"_id": ObjectId(post_id)})
+        if not post:
+            return jsonify({"message": "게시글을 찾을 수 없습니다."}), 404
+
+        # ✅ 현재 사용자가 게시글 작성자인지 확인
+        is_author = str(post["author_id"]) == str(user_id)
+
+        created_at = post["created_at"]
+        if isinstance(created_at, str):
+            created_at = datetime.datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")  # 문자열이면 변환
+
+        return render_template(
+            "post/detailTest.html",
+            post={
+                "id": str(post["_id"]),
+                "title": post["title"],
+                "category": post["category"],
+                "status": "진행 중" if post["status"] else "완료",
+                "price": "무료" if post["price"] == 0 else f"{post['price']}원",
+                "description": post["description"],
+                "created_at": created_at.strftime("%Y-%m-%d"),
+                "nick_name": post["nickname"]
+            },
+            is_author=is_author,
+)
+    except Exception as e:
+        print(f"❌ [ERROR] 상세페이지 조회 실패: {str(e)}")
+        return jsonify({"error": "서버 내부 오류 발생", "details": str(e)}), 500
+
+@app.route("/api/posts/<post_id>", methods=["PUT"])
+@jwt_required
+def edit_post(post_id):
+    try:
+        data = request.get_json()
+        new_title = data.get("title")
+
+        if not new_title:
+            return jsonify({"error": "제목을 입력하세요."}), 400
+
+        # ✅ 현재 로그인한 사용자 확인
+        current_user_id = get_jwt_identity()
+
+        # ✅ 게시글 찾기
+        post = posts_collection.find_one({"_id": ObjectId(post_id)})
+        if not post:
+            return jsonify({"error": "게시글을 찾을 수 없습니다."}), 404
+
+        # ✅ 본인 게시글인지 확인
+        if str(post["author_id"]) != str(current_user_id):
+            return jsonify({"error": "권한이 없습니다."}), 403
+
+        # ✅ 제목 업데이트
+        posts_collection.update_one(
+            {"_id": ObjectId(post_id)},
+            {"$set": {"title": new_title}}
+        )
+
+        return jsonify({"message": "게시글이 수정되었습니다."}), 200
+
+    except Exception as e:
+        print(f"❌ [ERROR] 게시글 수정 실패: {str(e)}")
+        return jsonify({"error": "서버 내부 오류"}), 500
+
+@app.route("/api/posts/<post_id>", methods=["DELETE"])
+@jwt_required
+def delete_post(post_id):
+    try:
+        # ✅ 현재 로그인한 사용자 확인
+        current_user_id = get_jwt_identity()
+
+        # ✅ 게시글 찾기
+        post = posts_collection.find_one({"_id": ObjectId(post_id)})
+        if not post:
+            return jsonify({"error": "게시글을 찾을 수 없습니다."}), 404
+
+        # ✅ 본인 게시글인지 확인
+        if str(post["author_id"]) != str(current_user_id):
+            return jsonify({"error": "권한이 없습니다."}), 403
+
+        # ✅ 게시글 삭제
+        posts_collection.delete_one({"_id": ObjectId(post_id)})
+
+        return jsonify({"message": "게시글이 삭제되었습니다."}), 200
+
+    except Exception as e:
+        print(f"❌ [ERROR] 게시글 삭제 실패: {str(e)}")
+        return jsonify({"error": "서버 내부 오류"}), 500
+
+
+### ✅ 마이페이지 (SSR 렌더링)
+@app.route("/mypage")
+def mypage():
+    user = get_current_user()
+    if not user:
+        return redirect(url_for("login"))  # 로그인 필요
+    return render_template("mypage.html", user=user)
 
 ######################################## 회원가입, 로그인  ########################################
 
@@ -236,9 +393,11 @@ def login():
 @app.route("/api/posts", methods=["POST"])
 @jwt_required  
 def create_post():
-    user_id = request.user["userId"]  # JWT에서 사용자 ID 가져오기
-    nickname = request.user["nickname"]  # JWT에서 가져온 닉네임
+    user_id = get_jwt_identity()
+    if not user_id:
+        return jsonify({"message": "로그인이 필요합니다."}), 401
 
+    nickname = request.user.get("nickname", "알 수 없음")  # 닉네임 기본값 설정
     # ✅ 요청 데이터 파싱
     data, error_response, error_status = parse_request_data()
     if error_response:
@@ -295,410 +454,102 @@ def create_post():
     post_id = posts_collection.insert_one(post).inserted_id
 
     return jsonify({
-        "message": "게시글이 등록되었습니다!",
-        "post_id": str(post_id)
+        "message": "게시글이 등록되었습니다!"
     }), 201
-
-
-# ✅ 게시글 목록 조회 (전체 조회)
-@app.route("/api/posts", methods=["GET"])
-def get_posts():
-    try:
-        # ✅ 요청 파라미터 가져오기 (기본값 설정)
-        category = request.args.get("category", "전체")  # 기본값 "전체"
-        page = int(request.args.get("page", 1))  # 기본값 1
-        limit = 9  # 한 페이지당 게시글 개수
-        skip = (page - 1) * limit  # 페이징 offset 계산
-
-
-        
-        # ✅ MongoDB 파이프라인 설정
-        pipeline = []
-
-        # ✅ 카테고리 필터링 적용 (전체가 아닐 경우)
-        if category != "전체":
-            pipeline.append({"$match": {"category": category}})
-
-        # ✅ 최신순 정렬 적용 후 페이징 처리
-        pipeline.extend([
-            {"$sort": {"created_at": -1}},  # 최신순 정렬
-            {"$skip": skip},  # 페이지네이션 적용
-            {"$limit": limit}  # 한 페이지당 9개 제한
-        ])
-
-        # ✅ MongoDB aggregate 실행
-        posts_cursor = posts_collection.aggregate(pipeline)
-        total_count = posts_collection.count_documents({"category": category} if category != "전체" else {})
-
-        DEFAULT_IMAGE_URL = url_for('static', filename='images/noimage.png', _external=True)  
-
-
-        # ✅ 응답 데이터 변환
-        posts = []
-        for post in posts_cursor:
-            post_price = "무료나눔" if post["price"] == 0 else post["price"]
-            post_status = "진행 중" if post["status"] else "완료"
-
-            posts.append({
-                "id": str(post["_id"]),
-                "title": post["title"],
-                "image_url": post.get("image_url") or DEFAULT_IMAGE_URL,
-                "category": post["category"],
-                "status": post_status,
-                "price": post_price,
-                "created_at": post["created_at"].isoformat(),
-                "nick_name": post["nickname"]
-            })
-
-        return jsonify({
-            "posts": posts,
-            "totalCount": total_count
-        }), 200
-
-    except Exception as e:
-        print(f"❌ [ERROR] 게시글 조회 실패: {str(e)}")
-        return jsonify({"error": "서버 내부 오류가 발생했습니다.", "details": str(e)}), 500
-
 
 # ✅ 업로드된 이미지 서빙 (Flask에서 정적 파일로 제공)
 @app.route("/uploads/<filename>")
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
-
-# ✅ 특정 게시글 조회 (상세 조회 + 댓글 포함)
-@app.route("/api/posts/<post_id>", methods=["GET"])
-@jwt_required
-def get_post_detail(post_id):
-    try:
-
-        # ✅ JWT 토큰 확인 (없으면 비로그인 상태로 처리)
-        token = request.headers.get("Authorization")
-        current_user_id = None  # 비로그인 사용자는 None
-        if token:
-            try:
-                token = token.split(" ")[1]  # "Bearer {token}" 형태에서 토큰만 추출
-                payload = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
-                current_user_id = payload.get("userId")  # 로그인한 사용자 ID 저장
-            except jwt.ExpiredSignatureError:
-                return jsonify({"message": "토큰이 만료되었습니다. 다시 로그인하세요."}), 401
-            except jwt.InvalidTokenError:
-                return jsonify({"message": "유효하지 않은 토큰입니다."}), 401
-
-        # ✅ 유효한 ObjectId인지 확인
-        if not ObjectId.is_valid(post_id):
-            return jsonify({"message": "잘못된 게시글 ID입니다."}), 400
-
-        # ✅ 게시글 찾기
-        post = posts_collection.find_one({"_id": ObjectId(post_id)})
-        if not post:
-            return jsonify({"message": "게시글을 찾을 수 없습니다."}), 404
-
-        # ✅ 현재 로그인한 사용자 정보 가져오기
-        current_user_id = request.user["userId"]
-        is_author = str(post["author_id"]) == str(current_user_id)
-
-        post_price = "무료나눔" if post["price"] == 0 else post["price"]
-        post_status = "진행 중" if post["status"] else "완료"  # ✅ 상태 변환
-
-        # ✅ 댓글 조회
-        comments = comments_collection.find({"post_id": ObjectId(post_id)})
-        comment_list = []
-        for comment in comments:
-            comment_list.append({
-                "id": comment["id"],
-                "writer": comment["writer"],
-                "content": comment["content"],
-                "created_at": comment["created_at"],
-                "isAuthor": comment["isAuthor"],
-                "replies": [
-                    {
-                        "id": reply["id"],
-                        "writer": reply["writer"],
-                        "content": reply["content"],
-                        "created_at": reply["created_at"],
-                        "isAuthor": reply["isAuthor"]
-                    }
-                    for reply in comment.get("replies", [])
-                ]
-            })
-
-        # ✅ 게시글 데이터 반환
-        response = {
-            "id": str(post["_id"]),
-            "title": post["title"],
-            "image_url": post.get("image_url", None),
-            "category": post["category"],
-            "status": post_status,
-            "price": post_price,
-            "description": post["description"],
-            "created_at": post["created_at"].isoformat(),
-            "nick_name": post["nickname"],
-            "isAuthor": is_author,
-            "comments": comment_list
-        }
-
-        return jsonify(response), 200
-
-    except Exception as e:
-        print(f"❌ [ERROR] 게시글 조회 실패: {str(e)}")  # ✅ 오류 메시지 출력
-        return jsonify({"error": "서버 내부 오류가 발생했습니다.", "details": str(e)}), 500
-    
-# ✅ 게시글 수정 API (본인만 가능)
-@app.route("/api/posts/<post_id>", methods=["PUT"])
-@jwt_required
-def update_post(post_id):
-    try:
-        # ✅ 현재 로그인한 사용자 정보 가져오기
-        user_id = request.user["userId"]
-
-        # ✅ 요청 데이터 파싱
-        data, error_response, error_status = parse_request_data()
-        if error_response:
-            return error_response, error_status  # 오류 응답 반환
-
-        # ✅ 게시글 찾기
-        post = posts_collection.find_one({"_id": ObjectId(post_id)})
-        if not post:
-            return jsonify({"message": "게시글을 찾을 수 없습니다."}), 404
-
-        # ✅ 작성자 확인 (본인만 수정 가능)
-        if str(post["author_id"]) != str(user_id):
-            return jsonify({"message": "본인 게시글만 수정할 수 있습니다."}), 403
-
-        # ✅ 수정할 필드만 업데이트 (입력된 값만 적용)
-        update_data = {}
-        if "title" in data:
-            update_data["title"] = data["title"]
-        if "category" in data:
-            update_data["category"] = data["category"]
-        if "status" in data:
-            update_data["status"] = data["status"]
-        if "price" in data:
-            update_data["price"] = data["price"]
-        if "description" in data:
-            update_data["description"] = data["description"]
-
-        # ✅ 데이터 업데이트 실행
-        posts_collection.update_one({"_id": ObjectId(post_id)}, {"$set": update_data})
-
-        return jsonify({"message": "게시글이 수정되었습니다."}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    
-# ✅ 게시글 삭제 API (본인만 가능)
-@app.route("/api/posts/<post_id>", methods=["DELETE"])
-@jwt_required
-def delete_post(post_id):
-    try:
-        # ✅ 현재 로그인한 사용자 정보 가져오기
-        user_id = request.user["userId"]
-
-        # ✅ 게시글 찾기
-        post = posts_collection.find_one({"_id": ObjectId(post_id)})
-        if not post:
-            return jsonify({"message": "게시글을 찾을 수 없습니다."}), 404
-
-        # ✅ 작성자 확인 (본인만 삭제 가능)
-        if str(post["author_id"]) != str(user_id):
-            return jsonify({"message": "본인 게시글만 삭제할 수 있습니다."}), 403
-
-        # ✅ 게시글 삭제
-        posts_collection.delete_one({"_id": ObjectId(post_id)})
-
-        # ✅ 해당 게시글의 모든 댓글 삭제
-        comments_collection.delete_many({"post_id": ObjectId(post_id)})
-
-        return jsonify({"message": "게시글이 삭제되었습니다."}), 200
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
     
 ######################################## 게시글  ########################################    
 
 ########################################  댓글, 대댓글  ########################################
 
-# 댓글 작성 API
+# ✅ 댓글 작성
 @app.route("/api/posts/<post_id>/comments", methods=["POST"])
 @jwt_required
 def add_comment(post_id):
-    try:
-        # ✅ 게시글 존재 확인
-        if not ObjectId.is_valid(post_id):
-            return jsonify({"message": "잘못된 게시글 ID입니다."}), 400
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    content = data.get("content", "").strip()
 
-        post = posts_collection.find_one({"_id": ObjectId(post_id)})
-        if not post:
-            return jsonify({"message": "게시글을 찾을 수 없습니다."}), 404
+    if not content:
+        return jsonify({"message": "댓글 내용을 입력해주세요."}), 400
 
-        # ✅ 요청 데이터 검증
-        data = request.get_json()
-        content = data.get("content", "").strip()
-        if not content:
-            return jsonify({"message": "댓글 내용을 입력해주세요."}), 400
+    comment = {
+        "post_id": ObjectId(post_id),
+        "author_id": ObjectId(user_id),
+        "content": content,
+        "created_at": datetime.datetime.now(),
+        "replies": []  # 🔥 대댓글 리스트 추가
+    }
 
-        # ✅ 현재 로그인한 사용자 정보 가져오기
-        user_id = request.user["userId"]
-        nickname = request.user["nickname"]
+    comments_collection.insert_one(comment)
+    return jsonify({"message": "댓글이 등록되었습니다!"}), 201
 
-        # ✅ 게시글 작성자인지 확인
-        is_author = str(post["author_id"]) == str(user_id)
 
-        # ✅ 현재 댓글 개수 조회 후, 새로운 ID 생성
-        last_comment = comments_collection.find_one(
-            {"post_id": ObjectId(post_id)}, sort=[("id", -1)]
-        )
-        new_comment_id = last_comment["id"] + 1 if last_comment else 1
-
-        # ✅ 댓글 저장
-        comment = {
-            "id": new_comment_id,  # 고유 숫자 ID
-            "post_id": ObjectId(post_id),
-            "writer": "작성자" if is_author else nickname,
-            "content": content,
-            "created_at": datetime.datetime.now().strftime("%Y-%m-%d"),
-            "isAuthor": is_author,
-            "replies": []  # 대댓글 리스트
-        }
-
-        comments_collection.insert_one(comment)
-
-        return jsonify({
-            "message": "댓글이 등록되었습니다!",
-            "comment_id": new_comment_id
-        }), 201
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-
-#  대댓글 추가 API
-@app.route("/api/posts/<post_id>/comments/<int:comment_id>/replies", methods=["POST"])
+# ✅ 대댓글 작성
+@app.route("/api/posts/<post_id>/comments/<comment_id>/replies", methods=["POST"])
 @jwt_required
 def add_reply(post_id, comment_id):
-    try:
-        # ✅ 게시글 & 댓글 존재 확인
-        if not ObjectId.is_valid(post_id):
-            return jsonify({"message": "잘못된 게시글 ID입니다."}), 400
+    user_id = get_jwt_identity()
+    data = request.get_json()
+    content = data.get("content", "").strip()
 
-        post = posts_collection.find_one({"_id": ObjectId(post_id)})
-        if not post:
-            return jsonify({"message": "게시글을 찾을 수 없습니다."}), 404
+    if not content:
+        return jsonify({"message": "대댓글 내용을 입력해주세요."}), 400
 
-        comment = comments_collection.find_one({"post_id": ObjectId(post_id), "id": comment_id})
-        if not comment:
-            return jsonify({"message": "댓글을 찾을 수 없습니다."}), 404
+    reply = {
+        "content": content,
+        "created_at": datetime.datetime.now()
+    }
 
-        # ✅ 요청 데이터 검증
-        data = request.get_json()
-        content = data.get("content", "").strip()
-        if not content:
-            return jsonify({"message": "대댓글 내용을 입력해주세요."}), 400
+    comments_collection.update_one(
+        {"_id": ObjectId(comment_id)},
+        {"$push": {"replies": reply}}
+    )
 
-        # ✅ 현재 로그인한 사용자 정보 가져오기
-        user_id = request.user["userId"]
-        nickname = request.user["nickname"]
-
-        # ✅ 게시글 작성자인지 확인
-        is_author = str(post["author_id"]) == str(user_id)
-
-        # ✅ 현재 대댓글 개수 조회 후, 새로운 ID 생성
-        last_reply = max([reply["id"] for reply in comment["replies"]], default=0)
-        new_reply_id = last_reply + 1
-
-        # ✅ 대댓글 데이터
-        reply = {
-            "id": new_reply_id,  # 고유 숫자 ID
-            "writer": "작성자" if is_author else nickname,
-            "content": content,
-            "created_at": datetime.datetime.now().strftime("%Y-%m-%d"),
-            "isAuthor": is_author
-        }
-
-        # ✅ 대댓글 추가
-        comments_collection.update_one(
-            {"post_id": ObjectId(post_id), "id": comment_id},
-            {"$push": {"replies": reply}}
-        )
-
-        return jsonify({"message": "대댓글이 등록되었습니다!", "reply_id": new_reply_id}), 201
-
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
+    return jsonify({"message": "대댓글이 등록되었습니다!"}), 201
 
 
 ########################################  댓글, 대댓글  ########################################
 
 ########################################  마이페이지  ########################################
 
-#  내 정보 조회 메소드
-@app.route("/api/users/me", methods=["GET"])
-@jwt_required
-def get_my_info():
-    user_id = request.user["userId"]
 
-    # 유저 정보 가져오기
-    user = users_collection.find_one({"_id": ObjectId(user_id)})
-    if not user:
-        return jsonify({"message": "유저를 찾을 수 없습니다."}), 404
-
-    # 유저가 작성한 게시글 개수 조회
-    my_post_count = posts_collection.count_documents({"author_id": user_id})
-
-    return jsonify({
-        "lab_name": user["lab_name"],
-        "cohort_name": user["cohort_name"],
-        "student_name": user["student_name"],
-        "my_post_count": my_post_count
-    }), 200
-
-#  내가 쓴 게시글 조회 메소드
-@app.route("/api/users/me/posts", methods=["GET"])
-@jwt_required
-def get_my_posts():
-    user_id = request.user["userId"]
-
-    # 사용자가 작성한 게시글 가져오기 (최신순 정렬)
-    posts = posts_collection.find({"author_id": user_id}).sort("created_at", -1)
-
-    post_list = []
-    for post in posts:
-        post_list.append({
-            "id": str(post["_id"]),
-            "title": post["title"],
-            "price": "무료" if post["price"] == 0 else post["price"],
-            "status": "진행 중" if post["status"] else "완료",
-            "created_at": post["created_at"].strftime("%Y-%m-%d")
-        })
-
-    return jsonify(post_list), 200
-
-#  게시글 상태 진행중 -> 완료 메소드
-@app.route("/api/posts/<post_id>/complete", methods=["UPDATE"])
+# #  게시글 상태 진행중 -> 완료 메소드
+@app.route("/api/posts/<post_id>/complete", methods=["PUT"])
 @jwt_required
 def complete_post(post_id):
-    user_id = request.user["userId"]
+    try:
+        user_id = get_jwt_identity()  # ✅ 현재 로그인한 사용자 확인
 
-    # ✅ 게시글 찾기
-    post = posts_collection.find_one({"_id": ObjectId(post_id)})
-    if not post:
-        return jsonify({"message": "게시글을 찾을 수 없습니다."}), 404
+        # ✅ 게시글 찾기
+        post = posts_collection.find_one({"_id": ObjectId(post_id)})
+        if not post:
+            return jsonify({"message": "게시글을 찾을 수 없습니다."}), 404
 
-    # ✅ 작성자 확인
-    if str(post["author_id"]) != str(user_id):
-        return jsonify({"message": "본인 게시글만 완료 처리할 수 있습니다."}), 403
+        # ✅ 본인 게시글인지 확인
+        if str(post["author_id"]) != str(user_id):
+            return jsonify({"message": "본인 게시글만 완료 처리할 수 있습니다."}), 403
 
-    # ✅ 게시글이 이미 완료된 경우
-    if not post["status"]:
-        return jsonify({"message": "이미 완료된 게시글입니다."}), 400
+        # ✅ 이미 완료된 경우 예외 처리
+        if not post["status"]:
+            return jsonify({"message": "이미 완료된 게시글입니다."}), 400
 
-    # ✅ 상태를 '완료'로 변경
-    posts_collection.update_one(
-        {"_id": ObjectId(post_id)},
-        {"$set": {"status": False}}
-    )
+        # ✅ 게시글 상태를 '완료'로 변경
+        posts_collection.update_one(
+            {"_id": ObjectId(post_id)},
+            {"$set": {"status": False}}
+        )
 
-    return jsonify({"message": "게시글이 완료되었습니다."}), 200
+        return jsonify({"message": "게시글이 완료되었습니다."}), 200
+
+    except Exception as e:
+        print(f"❌ [ERROR] 게시글 완료 처리 실패: {str(e)}")
+        return jsonify({"error": "서버 내부 오류 발생", "details": str(e)}), 500
 
 
 ########################################  마이페이지  ########################################
