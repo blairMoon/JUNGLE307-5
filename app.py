@@ -6,22 +6,31 @@ from bson import ObjectId
 import jwt  # PyJWT: JWT 토큰 생성 및 검증
 from functools import wraps
 from flask import Flask, render_template, request, jsonify , redirect, url_for ,send_from_directory, make_response
-from routes import routes 
+# from routes import routes 
 from pymongo import MongoClient  # MongoDB 연결
 from werkzeug.utils import secure_filename  # 파일 명 암호화
+import re
+from flask import flash, get_flashed_messages
+
+
 app = Flask(__name__)  # Flask 앱 생성
 app.config["SECRET_KEY"] = "JUNGLEWEEKZEROJUNGLEWEEKZEROJUNGLEWEEKZERO"
 # Blueprint 등록
+@app.route("/")
+def home():
+    return render_template("auth/login.html", title="week00", message="MainPage")
 
-app.register_blueprint(routes)
-
+COHORT_PATTERN = re.compile(r'^[0-9]{1,2}기-[0-9]{2}$')
+PASSWORD_PATTERN = re.compile(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$')
 UPLOAD_FOLDER = "uploads"
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
-
+@app.route("/list")
+def post_list():
+    return render_template("post/list.html")
 # ✅ 파일 확장자 검증 함수
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -116,8 +125,11 @@ def generate_jwt(student_name):
 # @app.route("/mypage")
 # def mypage():
 #     return render_template("/mypage/mypage.html")
-
-
+################################################################################
+@app.route("/register-success")
+def register_success():
+    return render_template("register_success.html")
+################################################################################
 
 # Base
 @app.route("/base")
@@ -127,34 +139,56 @@ def base():
 ######################################## 회원가입 & 로그인 (SSR) ########################################
 
 # ✅ 회원가입 페이지 렌더링
-@app.route("/signup")
-def signup_page():
-    return render_template("/auth/signup.html")
+# @app.route("/signup")
+# def signup_page():
+#     return render_template("/auth/signup.html")
 
 # ✅ 로그인 페이지 렌더링
 @app.route("/login")
 def login_page():
-    return render_template("/auth/login.html")
+    return render_template("auth/login.html")
 
 # ✅ 회원가입 (SSR)
-@app.route("/api/auth/signup", methods=["POST"])
+
+@app.route("/register", methods=["GET", "POST"])
+
 def register():
+    if request.method == "GET":
+        return render_template("register.html")
+
+    # ✅ POST 요청일 때만 실행
     lab_name = request.form.get("lab_name")
     cohort_name = request.form.get("cohort_name")
     student_name = request.form.get("student_name")
     password = request.form.get("password")
     password_confirm = request.form.get("password_confirm")
 
-    if not (lab_name and cohort_name and password and password_confirm and student_name):
-        return render_template("signup.html", error="❌ 모든 필드를 입력해주세요.")
+    # ✅ 필수 값 검사
+    if not all([lab_name, cohort_name, student_name, password, password_confirm]):
+        flash("❌ 모든 필드를 입력해주세요.")
+        return redirect(url_for("register"))
 
+    # ✅ 정규식 검사
+    if not COHORT_PATTERN.match(cohort_name):
+        flash("❌ 기수명 형식이 올바르지 않습니다. 예: 8기-76")
+        return redirect(url_for("register"))
+
+    if not PASSWORD_PATTERN.match(password):
+        flash("❌ 비밀번호는 영문 + 숫자 조합 8자 이상이어야 합니다.")
+        return redirect(url_for("register"))
+
+    # ✅ 비밀번호 일치 검사
     if password != password_confirm:
-        return render_template("signup.html", error="❌ 비밀번호가 일치하지 않습니다.")
+        flash("❌ 비밀번호가 일치하지 않습니다.")
+        return redirect(url_for("register"))
 
+    # ✅ 닉네임 중복 검사
     nickname = f"{lab_name} {cohort_name}"
     if users_collection.find_one({"nickname": nickname}):
-        return render_template("signup.html", error="❌ 이미 사용중인 닉네임(기수명)입니다.")
+        flash("❌ 이미 사용중인 닉네임(기수명)입니다.")
+        return redirect(url_for("register"))
 
+    # ✅ DB 저장
     hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
     users_collection.insert_one({
         "lab_name": lab_name,
@@ -164,18 +198,143 @@ def register():
         "password": hashed_password
     })
 
-    return redirect(url_for("/login"))
+    flash("✅ 회원가입이 완료되었습니다! 로그인해주세요.")
+    return redirect(url_for("register_success"))
 
+    if request.method == "GET":
+        return render_template("register.html")  # 처음 진입 시 폼 보여주기
+
+    # ✅ POST일 때만 아래 코드 실행!
+    lab_name = request.form.get("lab_name")
+    cohort_name = request.form.get("cohort_name")
+    student_name = request.form.get("student_name")
+    password = request.form.get("password")
+    password_confirm = request.form.get("password_confirm")
+
+    if not all([lab_name, cohort_name, student_name, password, password_confirm]):
+        return render_template("register.html", error="❌ 모든 필드를 입력해주세요.")
+
+    if not COHORT_PATTERN.match(cohort_name):
+        return render_template("register.html", error="❌ 기수명 형식이 올바르지 않습니다. 예: 8기-76")
+
+    if not PASSWORD_PATTERN.match(password):
+        return render_template("register.html", error="❌ 비밀번호는 영문 + 숫자 조합 8자 이상이어야 합니다.")
+
+    if password != password_confirm:
+        return render_template("register.html", error="❌ 비밀번호가 일치하지 않습니다.")
+
+    nickname = f"{lab_name} {cohort_name}"
+    if users_collection.find_one({"nickname": nickname}):
+        return render_template("register.html", error="❌ 이미 사용중인 닉네임(기수명)입니다.")
+
+    hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    users_collection.insert_one({
+        "lab_name": lab_name,
+        "cohort_name": cohort_name,
+        "student_name": student_name,
+        "nickname": nickname,
+        "password": hashed_password
+    })
+    
+    return redirect(url_for("login"))
+
+    lab_name = request.form.get("lab_name")
+    cohort_name = request.form.get("cohort_name")
+    student_name = request.form.get("student_name")
+    password = request.form.get("password")
+    password_confirm = request.form.get("password_confirm")
+
+    # ✅ 필수 값 검사
+    if not all([lab_name, cohort_name, student_name, password, password_confirm]):
+        return render_template("register.html", error="❌ 모든 필드를 입력해주세요.")
+
+    # ✅ 정규식 검사
+    if not COHORT_PATTERN.match(cohort_name):
+        return render_template("register.html", error="❌ 기수명 형식이 올바르지 않습니다. 예: 8기-76")
+
+    if not PASSWORD_PATTERN.match(password):
+        return render_template("register.html", error="❌ 비밀번호는 영문 + 숫자 조합 8자 이상이어야 합니다.")
+
+    # ✅ 비밀번호 일치 검사
+    if password != password_confirm:
+        return render_template("register.html", error="❌ 비밀번호가 일치하지 않습니다.")
+
+    # ✅ 중복 닉네임 검사
+    nickname = f"{lab_name} {cohort_name}"
+    if users_collection.find_one({"nickname": nickname}):
+        return render_template("register.html", error="❌ 이미 사용중인 닉네임(기수명)입니다.")
+
+    # ✅ DB 저장
+    hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+    users_collection.insert_one({
+        "lab_name": lab_name,
+        "cohort_name": cohort_name,
+        "student_name": student_name,
+        "nickname": nickname,
+        "password": hashed_password
+    })
+
+    return redirect(url_for("register"))
 # ✅ 로그인 (SSR)
-@app.route("/api/auth/login", methods=["POST"])
+@app.route("/login", methods=["GET", "POST"])
 def login():
+    if request.method == "GET":
+        return render_template("auth/login.html")
+
+    # POST 요청
+    lab_name = request.form.get("lab_name")
+    cohort_name = request.form.get("cohort_name")
+    password = request.form.get("password")
+
+    # ✅ 필수 입력 검사
+    if not all([lab_name, cohort_name, password]):
+        flash("❌ 모든 필드를 입력해주세요.")
+        return redirect(url_for("login"))
+
+    # ✅ 사용자 조회
+    user = users_collection.find_one({
+        "lab_name": lab_name,
+        "cohort_name": cohort_name
+    })
+
+    if not user or not bcrypt.checkpw(password.encode("utf-8"), user["password"]):
+        flash("❌ 아이디 또는 비밀번호가 잘못되었습니다.")
+        return redirect(url_for("login"))
+
+    # ✅ JWT 발급
+    access_payload = {
+        "userId": str(user["_id"]),
+        "nickname": f"{lab_name} {cohort_name}",
+        "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(hours=1)
+    }
+    refresh_payload = {
+        "userId": str(user["_id"]),
+        "exp": datetime.datetime.now(datetime.UTC) + datetime.timedelta(days=7)
+    }
+
+    access_token = jwt.encode(access_payload, app.config["SECRET_KEY"], algorithm="HS256")
+    refresh_token = jwt.encode(refresh_payload, app.config["SECRET_KEY"], algorithm="HS256")
+
+    # ✅ Refresh 토큰 DB에 저장
+    users_collection.update_one(
+        {"_id": user["_id"]},
+        {"$set": {"refresh_token": refresh_token}}
+    )
+
+    # ✅ 쿠키에 저장 후 list 페이지 이동
+    response = make_response(redirect(url_for("post_list")))
+    response.set_cookie("access_token", access_token, httponly=True, max_age=3600)
+    response.set_cookie("refresh_token", refresh_token, httponly=True, max_age=604800)
+
+    return response
+
     lab_name = request.form.get("lab_name")
     cohort_name = request.form.get("cohort_name")
     password = request.form.get("password")
 
     user = users_collection.find_one({"lab_name": lab_name, "cohort_name": cohort_name})
     if not user or not bcrypt.checkpw(password.encode("utf-8"), user["password"]):
-        return render_template("login.html", error="❌ 아이디 또는 비밀번호가 잘못되었습니다.")
+        return render_template("auth/login.html", error="❌ 아이디 또는 비밀번호가 잘못되었습니다.")
 
     # ✅ JWT 토큰 생성 (직접 생성)
     access_payload = {

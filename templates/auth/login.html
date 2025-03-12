@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>로그인</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/login.css') }}"
+    />
+  </head>
+  <body>
+    <div class="box">
+      <div class="image-container">
+        <img
+          class="logo"
+          src="{{ url_for('static', filename='images/logo2.png') }}"
+          alt="로고"
+        />
+      </div>
+
+      <div class="login-container">
+        <!-- 🔔 alert 띄우기 (flash 메시지) -->
+        {% with messages = get_flashed_messages() %} {% if messages %}
+        <script>
+          alert("{{ messages[0] }}");
+        </script>
+        {% endif %} {% endwith %}
+
+        <!-- 로그인 폼 -->
+        <form action="{{ url_for('login') }}" method="POST">
+          <div class="select-box-container">
+            <select name="lab_name" class="select-box" required>
+              <option value="" disabled selected>교육명 선택</option>
+              <option value="정글">정글</option>
+              <option value="게임랩">게임랩</option>
+              <option value="게임테크랩">게임 테크랩</option>
+            </select>
+            <input
+              type="text"
+              name="cohort_name"
+              class="text-input"
+              placeholder="EX) 8기-76"
+              required
+            />
+          </div>
+
+          <input
+            type="password"
+            name="password"
+            class="text-input"
+            placeholder="비밀번호"
+            required
+          />
+
+          <button type="submit" class="login-btn">로그인</button>
+        </form>
+
+        <!-- ✅ 회원가입 버튼 다시 살려줌!!! -->
+        <button
+          class="signup-btn"
+          onclick="location.href='{{ url_for('register') }}'"
+        >
+          회원가입
+        </button>
+      </div>
+    </div>
+  </body>
+</html>

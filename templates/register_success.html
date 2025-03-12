@@ -1,0 +1,16 @@
+<!-- register_success.html -->
+<!DOCTYPE html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <title>회원가입 완료</title>
+    <meta http-equiv="refresh" content="0; url={{ url_for('login') }}" />
+  </head>
+  <body>
+    <script>
+      alert("✅ 회원가입이 완료되었습니다!");
+      // 이동 후 히스토리 초기화 (로그인 페이지로 직접)
+      window.location.replace("{{ url_for('login') }}");
+    </script>
+  </body>
+</html>
