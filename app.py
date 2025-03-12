@@ -18,9 +18,25 @@ app.config["SECRET_KEY"] = "JUNGLEWEEKZEROJUNGLEWEEKZEROJUNGLEWEEKZERO"
 # Blueprint 등록
 @app.route("/")
 def home():
-    return render_template("auth/login.html", title="week00", message="MainPage")
+    access_token = request.cookies.get("access_token")
 
-COHORT_PATTERN = re.compile(r'^[0-9]{1,2}기-[0-9]{2}$')
+    if access_token:
+        try:
+            # 1. 토큰 디코딩 시도
+            payload = jwt.decode(access_token, app.config["SECRET_KEY"], algorithms=["HS256"])
+            # ✅ 토큰이 유효하면 post/list.html 렌더링
+            return render_template("post/list.html", nickname=payload["nickname"])
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
+            # ❌ 만료되었거나 잘못된 토큰은 쿠키 삭제
+            response = make_response(render_template("auth/login.html"))
+            response.delete_cookie("access_token")
+            response.delete_cookie("refresh_token")
+            return response
+
+    # ❌ 토큰이 없으면 로그인 페이지 보여주기
+    return render_template("auth/login.html")
+COHORT_PATTERN = re.compile(r'^[0-9]{1,2}기-(?:[1-9]|[1-9][0-9]|[1-9][0-9]{2})$')
+
 PASSWORD_PATTERN = re.compile(r'^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d]{8,}$')
 UPLOAD_FOLDER = "uploads"
 if not os.path.exists(UPLOAD_FOLDER):
@@ -126,9 +142,9 @@ def generate_jwt(student_name):
 # def mypage():
 #     return render_template("/mypage/mypage.html")
 ################################################################################
-@app.route("/register-success")
-def register_success():
-    return render_template("register_success.html")
+# @app.route("/register-success")
+# def register_success():
+#     return render_template("register_success.html")
 ################################################################################
 
 @app.route("/posts/new")
@@ -154,15 +170,26 @@ def base():
 #     return render_template("/auth/signup.html")
 
 # ✅ 로그인 페이지 렌더링
-@app.route("/login")
-def login_page():
-    return render_template("auth/login.html")
+# @app.route("/login")
+# def login_page():
+#     return render_template("auth/login.html")
 
 # ✅ 회원가입 (SSR)
 
 @app.route("/register", methods=["GET", "POST"])
 
 def register():
+    access_token = request.cookies.get("access_token")
+
+    # ✅ 로그인 되어 있으면 회원가입 페이지 접근 못하게 막기
+    if access_token:
+        try:
+            jwt.decode(access_token, app.config["SECRET_KEY"], algorithms=["HS256"])
+            return redirect(url_for("main_page"))  # 이미 로그인했으니까 메인으로 보내버려!
+        except jwt.ExpiredSignatureError:
+            pass
+        except jwt.InvalidTokenError:
+            pass
     if request.method == "GET":
         return render_template("register.html")
 
@@ -209,7 +236,7 @@ def register():
     })
 
     flash("✅ 회원가입이 완료되었습니다! 로그인해주세요.")
-    return redirect(url_for("register_success"))
+    return redirect(url_for("login"))
 
     if request.method == "GET":
         return render_template("register.html")  # 처음 진입 시 폼 보여주기
@@ -288,9 +315,18 @@ def register():
 # ✅ 로그인 (SSR)
 @app.route("/login", methods=["GET", "POST"])
 def login():
+    access_token = request.cookies.get("access_token")
+    if access_token:
+        try:
+            jwt.decode(access_token, app.config["SECRET_KEY"], algorithms=["HS256"])
+            return redirect(url_for("main_page"))
+        except jwt.ExpiredSignatureError:
+            pass
+        except jwt.InvalidTokenError:
+            pass
     if request.method == "GET":
         return render_template("auth/login.html")
-
+    
     # POST 요청
     lab_name = request.form.get("lab_name")
     cohort_name = request.form.get("cohort_name")
@@ -420,7 +456,7 @@ def get_current_user():
         return None  # 유효하지 않은 토큰
 
 
-@app.route("/")
+@app.route("/list")
 def main_page():
     try:
         # ✅ 로그인 여부 확인 (쿠키에서 access_token 가져오기)
