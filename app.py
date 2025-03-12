@@ -35,7 +35,7 @@ def generate_jwt(student_name):
 # 메인 페이지
 @app.route("/")
 def home():
-    return render_template("login.html", title="week00", message="MainPage")
+    return render_template("register.html", title="week00", message="MainPage")
 
 # 회원가입 메소드
 @app.route("/api/auth/signup", methods=["POST"])
