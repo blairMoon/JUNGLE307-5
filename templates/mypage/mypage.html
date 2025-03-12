@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% block title %}마이 페이지{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/mypage.css') }}">
+
+<div class="mypage-container">
+
+    <div class="user-card">
+        <img id="profile_image" src="/static/images/jungle.svg" alt="프로필 이미지">
+        <div class="post-count">
+            <span>게시글 수</span>
+            <span id="post_count"></span>
+        </div>
+        <div class="user-info">
+            <div class="nickname">
+                <p><span id="lab_name"></span></p>
+                <p><span id="cohort_name"></span></p>
+            </div>
+            <p><strong></strong><span id="student_name"></span></p>
+
+        </div>
+    </div>
+
+
+
+    <div class="posts-section">
+        <h2>내가 쓴 게시글</h2>
+        <table class="post-table">
+            <thead>
+                <tr>
+                    <th>번호</th>
+                    <th>제목</th>
+                    <th>가격</th>
+                    <th>작성일</th>
+                    <th>상태</th>
+                </tr>
+            </thead>
+            <tbody id="post_table"></tbody>
+        </table>
+
+
+    </div>
+
+    <script>
+        const API_BASE_URL = "http://localhost:5001/api";
+
+        // ✅ 사용자 정보 가져오기
+        function fetchUserInfo() {
+            const token = localStorage.getItem("token");
+            fetch(`${API_BASE_URL}/users/me`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    document.getElementById("lab_name").innerText = data.lab_name;
+                    document.getElementById("cohort_name").innerText = data.cohort_name;
+                    document.getElementById("student_name").innerText = data.student_name;
+                    document.getElementById("post_count").innerText = data.my_post_count;
+
+                    const profileMap = {
+                        "정글": "jungle.svg",
+                        "게임랩": "game_lab.svg",
+                        "게임테크랩": "game_tech_lab.svg"
+                    };
+                    const profileImage = profileMap[data.lab_name] || "default.svg";
+                    document.getElementById("profile_image").src = `/static/images/${profileImage}`;
+                })
+                .catch(err => console.error(err));
+        }
+
+        // ✅ 내가 쓴 게시글 가져오기
+        function fetchMyPosts() {
+            const token = localStorage.getItem("token");
+            fetch(`${API_BASE_URL}/users/me/posts`, {
+                headers: { "Authorization": `Bearer ${token}` }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    const postTable = document.getElementById("post_table");
+                    postTable.innerHTML = "";
+
+                    data.forEach((post, index) => {  // ✅ index를 사용하여 번호 부여 (1부터 시작)
+                        let row = document.createElement("tr");
+
+                            row.innerHTML = `
+                        <td>${index + 1}</td>  <!-- ✅ 1부터 시작하는 번호 추가 -->
+              <td onclick="goToPostDetail('${post.id}')">${post.title}</td>
+              <td>${post.price === 0 ? "무료" : post.price + "원"}</td>
+              <td>${new Date(post.created_at).toLocaleDateString()}</td>
+              <td>
+                <button onclick="completePost(event, '${post.id}')" 
+                  ${post.status === "완료" ? "disabled" : ""}>
+                  ${post.status}
+                </button>
+              </td>`;
+                            postTable.appendChild(row);
+                        });
+                    })
+                        .catch(err => console.error(err));
+                }
+
+        // ✅ 게시글 상세 페이지 이동
+        function goToPostDetail(postId) {
+                        location.href = `/post/${postId}`;
+                    }
+
+        // ✅ 게시글 상태 완료로 변경
+        function completePost(event, postId) {
+                        event.stopPropagation(); // 이벤트 버블링 방지
+                        const token = localStorage.getItem("token");
+                        fetch(`${API_BASE_URL}/posts/${postId}/complete`, {
+                            method: "UPDATE",
+                            headers: { "Authorization": `Bearer ${token}` }
+                        })
+                            .then(res => res.json())
+                            .then(data => {
+                                alert(data.message);
+                                fetchMyPosts();
+                            })
+                            .catch(err => console.error(err));
+                    }
+
+        window.onload = () => {
+                        fetchUserInfo();
+                        fetchMyPosts();
+                    };
+    </script>
+    {% endblock %}

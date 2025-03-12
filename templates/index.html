@@ -339,7 +339,9 @@ function deletePost() {
     .catch(error => console.error("Error:", error));
 }
 
-
+function goToMyPage() {
+    window.location.href = "http://localhost:5001/mypage";
+}
 
 
     </script>
@@ -360,6 +362,8 @@ function deletePost() {
     <input type="text" id="login_cohort_name" placeholder="기수명">
     <input type="password" id="login_password" placeholder="비밀번호">
     <button onclick="loginUser()">로그인</button>
+
+    <button onclick="goToMyPage()">마이페이지</button>
 
     <h2>게시글 작성</h2>
     <input type="text" id="post_title" placeholder="제목">

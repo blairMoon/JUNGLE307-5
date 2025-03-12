@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+{% block title %}메인 페이지{% endblock %}
+
+{% block content %}
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>메인 페이지</title>
+    <style>
+        .post-item {
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid #ddd;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .post-image {
+            width: 50px;
+            height: 50px;
+            margin-right: 10px;
+        }
+        .badge {
+            padding: 5px;
+            border-radius: 5px;
+            color: white;
+        }
+        .red { background-color: red; }
+        .blue { background-color: blue; }
+        .active { font-weight: bold; }
+    </style>
+</head>
+<body>
+    <h1>메인 페이지</h1>
+    <nav>
+        <button onclick="changeCategory('전체')">전체</button>
+        <button onclick="changeCategory('필요해요')">필요해요</button>
+        <button onclick="changeCategory('나눔해요')">나눔해요</button>
+    </nav>
+    <div id="post_list"></div>
+    <div id="pagination"></div>
+    
+    <script>
+        const API_BASE_URL = "http://localhost:5001/api";
+        let currentPage = 1;
+        let currentCategory = "전체";
+
+        function fetchPosts(category = currentCategory, page = 1) {
+            fetch(`${API_BASE_URL}/posts?category=${category}&page=${page}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log(['json'],data)
+                    currentPage = page;
+                    currentCategory = category;
+                    renderPosts(data.posts);
+                    renderPagination(data.totalCount);
+                })
+                .catch(error => console.error("Error:", error));
+        }
+
+        function renderPosts(posts) {
+            const postList = document.getElementById("post_list");
+            postList.innerHTML = "";
+
+            posts.forEach(post => {
+            let item = document.createElement("div");
+            item.className = "post-item";
+
+            // ✅ 토큰 가져오기
+        const token = localStorage.getItem("token");
+
+// ✅ 대표 이미지 (클릭 시 상세 페이지 이동)
+let image = document.createElement("img");
+image.src = post.image_url || "/static/image/noimage.png";  // 디폴트 이미지 설정
+image.alt = "대표 이미지";
+image.className = "post-image";
+image.onclick = () => {
+    if (token) {
+        location.href = `/post/${post.id}`;
+    } else {
+        alert("로그인이 필요합니다!");
+    }
+};
+
+// ✅ 게시글 내용 (제목 클릭 가능하게 수정)
+let content = document.createElement("div");
+content.className = "post-content";
+
+let badge = document.createElement("span");
+badge.className = `badge ${post.category === '필요해요' ? 'red' : 'blue'}`;
+badge.innerText = post.category;
+
+let title = document.createElement("h3");
+title.innerText = post.title;
+title.style.cursor = "pointer";
+title.onclick = () => {
+    if (token) {
+        location.href = `/post/${post.id}`;
+    } else {
+        alert("로그인이 필요합니다!");
+    }
+};
+
+let status = document.createElement("p");
+status.innerHTML = `<strong>상태:</strong> ${post.status}`;
+
+let price = document.createElement("p");
+price.innerHTML = `<strong>가격:</strong> ${post.price}`;
+
+let author = document.createElement("p");
+author.innerHTML = `<strong>작성자:</strong> ${post.nick_name}`;
+
+let createdAt = document.createElement("p");
+createdAt.innerHTML = `<strong>작성일:</strong> ${new Date(post.created_at).toLocaleString()}`;
+
+// ✅ 게시글 내용 추가
+content.appendChild(badge);
+content.appendChild(title);
+content.appendChild(status);
+content.appendChild(price);
+content.appendChild(author);
+content.appendChild(createdAt);
+
+// ✅ 아이템에 추가
+item.appendChild(image);
+item.appendChild(content);
+
+// ✅ 리스트에 추가
+postList.appendChild(item);
+    });
+}
+
+
+        function renderPagination(totalCount) {
+            const pagination = document.getElementById("pagination");
+            pagination.innerHTML = "";
+            const totalPages = Math.ceil(totalCount / 9);
+
+            for (let i = 1; i <= totalPages; i++) {
+                let btn = document.createElement("button");
+                btn.innerText = i;
+                btn.className = i === currentPage ? "active" : "";
+                btn.onclick = () => fetchPosts(currentCategory, i);
+                pagination.appendChild(btn);
+            }
+        }
+
+        function changeCategory(category) {
+            fetchPosts(category, 1);
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            fetchPosts();
+        });
+
+
+    </script>
+</body>
+</html>
+{% endblock %}

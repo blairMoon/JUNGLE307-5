@@ -104,15 +104,28 @@ def jwt_required(f):
 
 
 
+@app.route("/mypage")
+def mypage():
+    return render_template("/mypage/mypage.html")
+
+@app.route("/main")
+def home():
+    return render_template("main.html")
+
 # 메인 페이지
 @app.route("/")
-def home():
+def test():
     return render_template("index.html")
 
 # Base
 @app.route("/base")
 def base():
     return render_template("base.html")
+
+@app.route("/post/<post_id>")
+def post_detail_page(post_id):
+    # ✅ URL에 토큰이 포함되었더라도 무시하고, 로그인한 사용자 정보는 요청 헤더에서 처리
+    return render_template("/post/detailTest.html", post_id=post_id)
 
 ######################################## 회원가입, 로그인  ########################################
 
@@ -217,7 +230,7 @@ def login():
 
 ######################################## 회원가입, 로그인  ########################################
 
-######################################## 게시글 작성  ########################################
+######################################## 게시글  ########################################
 
 # ✅ JWT 인증 필요: 게시글 생성 (POST)
 @app.route("/api/posts", methods=["POST"])
@@ -290,25 +303,62 @@ def create_post():
 # ✅ 게시글 목록 조회 (전체 조회)
 @app.route("/api/posts", methods=["GET"])
 def get_posts():
-    posts = posts_collection.find().sort("created_at", -1)  # 최신순 정렬
-    post_list = []
+    try:
+        # ✅ 요청 파라미터 가져오기 (기본값 설정)
+        category = request.args.get("category", "전체")  # 기본값 "전체"
+        page = int(request.args.get("page", 1))  # 기본값 1
+        limit = 9  # 한 페이지당 게시글 개수
+        skip = (page - 1) * limit  # 페이징 offset 계산
 
-    for post in posts:
-        post_price = "무료나눔" if post["price"] == 0 else post["price"]
-        post_status = "진행 중" if post["status"] else "완료"
 
-        post_list.append({
-            "id": str(post["_id"]),
-            "title": post["title"],
-            "image_url": post.get("image_url", None),
-            "category": post["category"],
-            "status": post_status,
-            "price": post_price,
-            "created_at": post["created_at"].isoformat(),
-            "nick_name": post["nickname"]
-        })
+        
+        # ✅ MongoDB 파이프라인 설정
+        pipeline = []
 
-    return jsonify(post_list), 200
+        # ✅ 카테고리 필터링 적용 (전체가 아닐 경우)
+        if category != "전체":
+            pipeline.append({"$match": {"category": category}})
+
+        # ✅ 최신순 정렬 적용 후 페이징 처리
+        pipeline.extend([
+            {"$sort": {"created_at": -1}},  # 최신순 정렬
+            {"$skip": skip},  # 페이지네이션 적용
+            {"$limit": limit}  # 한 페이지당 9개 제한
+        ])
+
+        # ✅ MongoDB aggregate 실행
+        posts_cursor = posts_collection.aggregate(pipeline)
+        total_count = posts_collection.count_documents({"category": category} if category != "전체" else {})
+
+        DEFAULT_IMAGE_URL = url_for('static', filename='images/noimage.png', _external=True)  
+
+
+        # ✅ 응답 데이터 변환
+        posts = []
+        for post in posts_cursor:
+            post_price = "무료나눔" if post["price"] == 0 else post["price"]
+            post_status = "진행 중" if post["status"] else "완료"
+
+            posts.append({
+                "id": str(post["_id"]),
+                "title": post["title"],
+                "image_url": post.get("image_url") or DEFAULT_IMAGE_URL,
+                "category": post["category"],
+                "status": post_status,
+                "price": post_price,
+                "created_at": post["created_at"].isoformat(),
+                "nick_name": post["nickname"]
+            })
+
+        return jsonify({
+            "posts": posts,
+            "totalCount": total_count
+        }), 200
+
+    except Exception as e:
+        print(f"❌ [ERROR] 게시글 조회 실패: {str(e)}")
+        return jsonify({"error": "서버 내부 오류가 발생했습니다.", "details": str(e)}), 500
+
 
 # ✅ 업로드된 이미지 서빙 (Flask에서 정적 파일로 제공)
 @app.route("/uploads/<filename>")
@@ -321,6 +371,20 @@ def uploaded_file(filename):
 @jwt_required
 def get_post_detail(post_id):
     try:
+
+        # ✅ JWT 토큰 확인 (없으면 비로그인 상태로 처리)
+        token = request.headers.get("Authorization")
+        current_user_id = None  # 비로그인 사용자는 None
+        if token:
+            try:
+                token = token.split(" ")[1]  # "Bearer {token}" 형태에서 토큰만 추출
+                payload = jwt.decode(token, app.config["SECRET_KEY"], algorithms=["HS256"])
+                current_user_id = payload.get("userId")  # 로그인한 사용자 ID 저장
+            except jwt.ExpiredSignatureError:
+                return jsonify({"message": "토큰이 만료되었습니다. 다시 로그인하세요."}), 401
+            except jwt.InvalidTokenError:
+                return jsonify({"message": "유효하지 않은 토큰입니다."}), 401
+
         # ✅ 유효한 ObjectId인지 확인
         if not ObjectId.is_valid(post_id):
             return jsonify({"message": "잘못된 게시글 ID입니다."}), 400
@@ -451,9 +515,9 @@ def delete_post(post_id):
     except Exception as e:
         return jsonify({"error": str(e)}), 500
     
-######################################## 게시글 작성  ########################################    
+######################################## 게시글  ########################################    
 
-########################################  댓글 작성  ########################################
+########################################  댓글, 대댓글  ########################################
 
 # 댓글 작성 API
 @app.route("/api/posts/<post_id>/comments", methods=["POST"])
@@ -563,7 +627,81 @@ def add_reply(post_id, comment_id):
         return jsonify({"error": str(e)}), 500
 
 
-########################################  댓글 작성  ########################################
+########################################  댓글, 대댓글  ########################################
+
+########################################  마이페이지  ########################################
+
+#  내 정보 조회 메소드
+@app.route("/api/users/me", methods=["GET"])
+@jwt_required
+def get_my_info():
+    user_id = request.user["userId"]
+
+    # 유저 정보 가져오기
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return jsonify({"message": "유저를 찾을 수 없습니다."}), 404
+
+    # 유저가 작성한 게시글 개수 조회
+    my_post_count = posts_collection.count_documents({"author_id": user_id})
+
+    return jsonify({
+        "lab_name": user["lab_name"],
+        "cohort_name": user["cohort_name"],
+        "student_name": user["student_name"],
+        "my_post_count": my_post_count
+    }), 200
+
+#  내가 쓴 게시글 조회 메소드
+@app.route("/api/users/me/posts", methods=["GET"])
+@jwt_required
+def get_my_posts():
+    user_id = request.user["userId"]
+
+    # 사용자가 작성한 게시글 가져오기 (최신순 정렬)
+    posts = posts_collection.find({"author_id": user_id}).sort("created_at", -1)
+
+    post_list = []
+    for post in posts:
+        post_list.append({
+            "id": str(post["_id"]),
+            "title": post["title"],
+            "price": "무료" if post["price"] == 0 else post["price"],
+            "status": "진행 중" if post["status"] else "완료",
+            "created_at": post["created_at"].strftime("%Y-%m-%d")
+        })
+
+    return jsonify(post_list), 200
+
+#  게시글 상태 진행중 -> 완료 메소드
+@app.route("/api/posts/<post_id>/complete", methods=["UPDATE"])
+@jwt_required
+def complete_post(post_id):
+    user_id = request.user["userId"]
+
+    # ✅ 게시글 찾기
+    post = posts_collection.find_one({"_id": ObjectId(post_id)})
+    if not post:
+        return jsonify({"message": "게시글을 찾을 수 없습니다."}), 404
+
+    # ✅ 작성자 확인
+    if str(post["author_id"]) != str(user_id):
+        return jsonify({"message": "본인 게시글만 완료 처리할 수 있습니다."}), 403
+
+    # ✅ 게시글이 이미 완료된 경우
+    if not post["status"]:
+        return jsonify({"message": "이미 완료된 게시글입니다."}), 400
+
+    # ✅ 상태를 '완료'로 변경
+    posts_collection.update_one(
+        {"_id": ObjectId(post_id)},
+        {"$set": {"status": False}}
+    )
+
+    return jsonify({"message": "게시글이 완료되었습니다."}), 200
+
+
+########################################  마이페이지  ########################################
 
 if __name__ == "__main__":
-    app.run(debug=True, port=5001)
+    app.run('0.0.0.0', debug=True, port=5001)
