@@ -114,7 +114,15 @@ def generate_jwt(student_name):
 # def mypage():
 #     return render_template("/mypage/mypage.html")
 
+@app.route("/posts/new")
+@jwt_required
+def create_post_page():
+    return render_template("post/create.html")
 
+# 로그인 알림 페이지 라우트
+@app.route("/login-alert")
+def login_alert():
+    return render_template("loginAlert.html")
 
 # Base
 @app.route("/base")
@@ -136,32 +144,56 @@ def login_page():
 # ✅ 회원가입 (SSR)
 @app.route("/api/auth/signup", methods=["POST"])
 def register():
-    lab_name = request.form.get("lab_name")
-    cohort_name = request.form.get("cohort_name")
-    student_name = request.form.get("student_name")
-    password = request.form.get("password")
-    password_confirm = request.form.get("password_confirm")
+    try:
+        lab_name = (request.form.get("lab_name") or "").strip()
+        cohort_name = (request.form.get("cohort_name") or "").strip()
+        student_name = (request.form.get("student_name") or "").strip()
+        password = (request.form.get("password") or "").strip()
+        password_confirm = (request.form.get("password_confirm") or "").strip()
 
-    if not (lab_name and cohort_name and password and password_confirm and student_name):
-        return render_template("signup.html", error="❌ 모든 필드를 입력해주세요.")
+        # ✅ 필수 입력값 확인
+        if not (lab_name and cohort_name and student_name and password and password_confirm):
+            return render_template("auth/signup.html", error="❌ 모든 필드를 입력해주세요.")  # 🔥 400 상태코드 제거 (SSR에서는 필요 없음)
 
-    if password != password_confirm:
-        return render_template("signup.html", error="❌ 비밀번호가 일치하지 않습니다.")
+        # ✅ 기수명 정규식 검증
+        if not GISU_PATTERN.match(cohort_name):
+            return render_template("auth/signup.html", error="❌ 기수명 형식이 올바르지 않습니다. (예: 1기-01)")
 
-    nickname = f"{lab_name} {cohort_name}"
-    if users_collection.find_one({"nickname": nickname}):
-        return render_template("signup.html", error="❌ 이미 사용중인 닉네임(기수명)입니다.")
+        # ✅ 비밀번호 정규식 검증
+        if not PASSWORD_PATTERN.match(password):
+            return render_template("auth/signup.html", error="❌ 비밀번호는 최소 8자 이상이며, 영문자와 숫자를 포함해야 합니다.")
 
-    hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
-    users_collection.insert_one({
-        "lab_name": lab_name,
-        "cohort_name": cohort_name,
-        "student_name": student_name,
-        "nickname": nickname,
-        "password": hashed_password
-    })
+        # ✅ 비밀번호 확인 검사
+        if password != password_confirm:
+            return render_template("auth/signup.html", error="❌ 비밀번호가 일치하지 않습니다.")
 
-    return redirect(url_for("/login"))
+        # ✅ 닉네임 중복 검사
+        nickname = f"{lab_name} {cohort_name}"
+        if users_collection.find_one({"nickname": nickname}):
+            return render_template("auth/signup.html", error="❌ 이미 사용중인 닉네임(기수명)입니다.")
+
+        # ✅ 비밀번호 해싱 후 저장
+        hashed_password = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+
+        # ✅ MongoDB 저장
+        result = users_collection.insert_one({
+            "lab_name": lab_name,
+            "cohort_name": cohort_name,
+            "student_name": student_name,
+            "nickname": nickname,
+            "password": hashed_password
+        })
+
+        # 🔥 저장 실패 시 예외 처리
+        if not result.inserted_id:
+            return render_template("auth/signup.html", error="❌ 회원가입에 실패했습니다. 다시 시도해주세요.")
+
+        return redirect(url_for("login"))  # ✅ 회원가입 성공 시 로그인 페이지로 이동
+
+    except Exception as e:
+        print(f"❌ [ERROR] 회원가입 실패: {str(e)}")  # 🔥 예외 로그 추가
+        return render_template("auth/signup.html", error="❌ 서버 오류 발생. 다시 시도해주세요.")
+
 
 # ✅ 로그인 (SSR)
 @app.route("/api/auth/login", methods=["POST"])
@@ -201,9 +233,30 @@ def login():
 
     return response
 
+@app.route("/api/check-duplicate", methods=["POST"])
+def check_duplicate():
+    try:
+        data = request.get_json()
+        lab_name = (data.get("lab_name") or "").strip()
+        cohort_name = (data.get("cohort_name") or "").strip()
+
+        # ✅ 필수 입력값 확인
+        if not (lab_name and cohort_name):
+            return jsonify({"error": "❌ 랩 이름과 기수명을 입력하세요."}), 400
+
+        # ✅ 중복 검사
+        nickname = f"{lab_name} {cohort_name}"
+        is_duplicate = users_collection.find_one({"nickname": nickname}) is not None
+
+        return jsonify({"is_duplicate": is_duplicate})
+
+    except Exception as e:
+        print(f"❌ [ERROR] 중복 검사 실패: {str(e)}")
+        return jsonify({"error": "❌ 서버 오류 발생"}), 500
+
 
 ### ✅ 로그아웃 (쿠키 삭제)
-@app.route("/api/auth/logout", methods=["POST"])
+@app.route("/logout", methods=["POST"])
 def logout():
     response = make_response(jsonify({"message": "로그아웃 성공!"}), 200)
     response.set_cookie("access_token", "", expires=0)
@@ -283,49 +336,84 @@ def main_page():
 @jwt_required  # ✅ 직접 구현한 JWT 인증 데코레이터 사용
 def get_post_detail(post_id):
     try:
-        user_id = get_jwt_identity()  # ✅ 현재 로그인한 사용자 ID 가져오기
+        user_id = get_jwt_identity()
+        user = None
+        user_info = None
+        if user_id:  # 🔥 user_id가 None이 아닐 경우에만 조회
+            user = users_collection.find_one({"_id": ObjectId(user_id)})
+            if user:
+                user_info = {
+                    "nickname": user.get("nickname", "알 수 없음"),
+                    "userId": str(user["_id"])
+                }
 
-        if not ObjectId.is_valid(post_id):
-            return jsonify({"message": "잘못된 게시글 ID입니다."}), 400
-
+        # ✅ 게시글 조회
         post = posts_collection.find_one({"_id": ObjectId(post_id)})
         if not post:
             return jsonify({"message": "게시글을 찾을 수 없습니다."}), 404
 
-        # ✅ 현재 사용자가 게시글 작성자인지 확인
-        is_author = str(post["author_id"]) == str(user_id)
+        # ✅ 댓글 조회 (로그인하지 않은 경우에도 볼 수 있도록 수정)
+        comments_cursor = comments_collection.find({"post_id": ObjectId(post_id)})
+        comments = []
+        for comment in comments_cursor:
+            comment_author = users_collection.find_one({"_id": comment["author_id"]}) if "author_id" in comment else None
 
-        created_at = post["created_at"]
-        if isinstance(created_at, str):
-            created_at = datetime.datetime.strptime(created_at, "%Y-%m-%d %H:%M:%S")  # 문자열이면 변환
+            # ✅ 대댓글 조회 (replies 리스트가 있는 경우 가져오기)
+            replies = []
+            for reply in comment.get("replies", []):
+                reply_author = users_collection.find_one({"_id": reply["author_id"]}) if "author_id" in reply else None
+                replies.append({
+                    "id": str(reply.get("_id")),
+                    "writer": reply_author["nickname"] if reply_author else "익명",
+                    "content": reply.get("content", ""),
+                    "created_at": reply.get("created_at", "").strftime("%Y-%m-%d"),
+                    "is_author": str(reply.get("author_id")) == str(user_id) if user_id else False
+                })
+
+            comments.append({
+                "id": str(comment["_id"]),
+                "writer": comment_author["nickname"] if comment_author else "익명",
+                "content": comment["content"],
+                "created_at": comment["created_at"].strftime("%Y-%m-%d"),
+                "is_author": str(comment["author_id"]) == str(user_id) if user_id else False , # ✅ 로그인하지 않은 경우에도 안전 처리
+                "replies" : replies
+            })
 
         return render_template(
             "post/detailTest.html",
             post={
                 "id": str(post["_id"]),
                 "title": post["title"],
+                "image_url": post.get("image_url", "/static/images/noimage.png"),
                 "category": post["category"],
                 "status": "진행 중" if post["status"] else "완료",
                 "price": "무료" if post["price"] == 0 else f"{post['price']}원",
                 "description": post["description"],
-                "created_at": created_at.strftime("%Y-%m-%d"),
+                "created_at": post["created_at"].strftime("%Y-%m-%d"),
                 "nick_name": post["nickname"]
             },
-            is_author=is_author,
-)
+            comments=comments,
+            user_info=user_info,  # ✅ user_info가 None이면 로그인되지 않은 상태
+            is_author=str(post["author_id"]) == str(user_id) if user_id else False  # ✅ 로그인하지 않은 경우에도 False 처리
+        )
+
     except Exception as e:
         print(f"❌ [ERROR] 상세페이지 조회 실패: {str(e)}")
         return jsonify({"error": "서버 내부 오류 발생", "details": str(e)}), 500
+    
 
 @app.route("/api/posts/<post_id>", methods=["PUT"])
 @jwt_required
 def edit_post(post_id):
     try:
         data = request.get_json()
-        new_title = data.get("title")
+        new_title = data.get("title", "").strip()
+        new_description = data.get("description", "").strip()
+        new_price = data.get("price", "").strip()
 
-        if not new_title:
-            return jsonify({"error": "제목을 입력하세요."}), 400
+        # ✅ 최소 한 개의 필드라도 입력해야 함
+        if not new_title and not new_description and not new_price:
+            return jsonify({"error": "수정할 내용을 입력하세요."}), 400
 
         # ✅ 현재 로그인한 사용자 확인
         current_user_id = get_jwt_identity()
@@ -339,10 +427,25 @@ def edit_post(post_id):
         if str(post["author_id"]) != str(current_user_id):
             return jsonify({"error": "권한이 없습니다."}), 403
 
-        # ✅ 제목 업데이트
+        # ✅ 업데이트할 데이터 준비
+        update_data = {}
+        if new_title:
+            update_data["title"] = new_title
+        if new_description:
+            update_data["description"] = new_description
+        if new_price:
+            try:
+                price_value = int(new_price)
+                if price_value < 0:
+                    return jsonify({"error": "가격은 0 이상의 숫자로 입력해야 합니다."}), 400
+                update_data["price"] = price_value
+            except ValueError:
+                return jsonify({"error": "가격은 숫자로 입력해야 합니다."}), 400
+
+        # ✅ 게시글 업데이트 실행
         posts_collection.update_one(
             {"_id": ObjectId(post_id)},
-            {"$set": {"title": new_title}}
+            {"$set": update_data}
         )
 
         return jsonify({"message": "게시글이 수정되었습니다."}), 200
@@ -379,11 +482,39 @@ def delete_post(post_id):
 
 ### ✅ 마이페이지 (SSR 렌더링)
 @app.route("/mypage")
+@jwt_required
 def mypage():
-    user = get_current_user()
-    if not user:
-        return redirect(url_for("login"))  # 로그인 필요
-    return render_template("mypage.html", user=user)
+    try:
+        user = get_current_user()
+        if not user:
+            return redirect(url_for("login_page"))  # 로그인 안 된 경우 로그인 페이지로 이동
+
+        # ✅ 사용자가 작성한 게시글 목록 가져오기
+        user_posts = list(posts_collection.find({"author_id": str(user["_id"])}).sort("created_at", -1))
+        for post in user_posts:
+            post["id"] = str(post["_id"])
+            post["created_at"] = post["created_at"].strftime("%Y-%m-%d")
+
+        post_count = len(user_posts)
+
+        # ✅ 사용자가 작성한 댓글 목록 가져오기 (선택 사항)
+        user_comments = list(comments_collection.find({"author_id": str(user["_id"])}).sort("created_at", -1))
+        for comment in user_comments:
+            comment["id"] = str(comment["_id"])
+            comment["created_at"] = comment["created_at"].strftime("%Y-%m-%d")
+
+        return render_template(
+            "mypage/mypage.html",
+            user=user,
+            posts=user_posts,
+            comments=user_comments,  # 필요 없으면 제외 가능
+            post_count = post_count
+        )
+
+    except Exception as e:
+        print(f"❌ [ERROR] 마이페이지 조회 실패: {str(e)}")
+        return jsonify({"error": "서버 내부 오류 발생", "details": str(e)}), 500
+
 
 ######################################## 회원가입, 로그인  ########################################
 
@@ -472,16 +603,36 @@ def uploaded_file(filename):
 @jwt_required
 def add_comment(post_id):
     user_id = get_jwt_identity()
+    if not user_id:
+        return jsonify({"message": "로그인이 필요합니다."}), 401
+
+    user = users_collection.find_one({"_id": ObjectId(user_id)})
+    if not user:
+        return jsonify({"message": "사용자 정보를 찾을 수 없습니다."}), 404
+
+    # ✅ 해당 게시글 가져오기
+    post = posts_collection.find_one({"_id": ObjectId(post_id)})
+    if not post:
+        return jsonify({"message": "게시글을 찾을 수 없습니다."}), 404
+
     data = request.get_json()
     content = data.get("content", "").strip()
 
     if not content:
         return jsonify({"message": "댓글 내용을 입력해주세요."}), 400
+    
+    # ✅ 현재 사용자가 게시글 작성자인지 확인
+    is_author = str(post["author_id"]) == str(user["_id"])
+
+    # ✅ `writer` 값을 "작성자" 또는 본인 닉네임으로 설정
+    writer = "작성자" if is_author else user["nickname"]
 
     comment = {
         "post_id": ObjectId(post_id),
         "author_id": ObjectId(user_id),
+        "writer": writer,  # ✅ 닉네임 추가
         "content": content,
+        "isAuthor": is_author,  # ✅ 게시글 작성자인지 여부 추가
         "created_at": datetime.datetime.now(),
         "replies": []  # 🔥 대댓글 리스트 추가
     }
@@ -502,13 +653,14 @@ def add_reply(post_id, comment_id):
         return jsonify({"message": "대댓글 내용을 입력해주세요."}), 400
 
     reply = {
+        "author_id": ObjectId(user_id),
         "content": content,
         "created_at": datetime.datetime.now()
     }
 
     comments_collection.update_one(
         {"_id": ObjectId(comment_id)},
-        {"$push": {"replies": reply}}
+        {"$push": {"replies": reply}}  # 🔥 대댓글 리스트에 추가
     )
 
     return jsonify({"message": "대댓글이 등록되었습니다!"}), 201
