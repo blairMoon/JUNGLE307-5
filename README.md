@@ -7,3 +7,4 @@
 ### Pillow → 이미지 처리 (pip install pillow) <- 이거 사용안해서 지울게요 
 
 ### pip install bcrypt
+##34343
