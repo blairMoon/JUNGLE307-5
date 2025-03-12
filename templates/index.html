@@ -1,396 +1,424 @@
 <!DOCTYPE html>
 <html lang="ko">
-<<<<<<< HEAD
   <head>
     <meta charset="UTF-8" />
-    <title>{{ title }}</title>
-</head>
-<body>
-    
-    <h1>{{ message }}</h1>
-    <button class="contrast">필요해요</button>
-    <button class="secondary">나눔해요</button>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/@picocss/pico@1.*/css/pico.min.css"
-    />
-  </body>
-=======
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Flask API 테스트</title>
     <script>
-        const API_BASE_URL = "http://localhost:5001/api";
+      const API_BASE_URL = "http://localhost:5001/api";
 
-        // ✅ 회원가입 요청
-        function registerUser() {
-            const data = {
-                lab_name: document.getElementById("reg_lab_name").value,
-                cohort_name: document.getElementById("reg_cohort_name").value,
-                student_name: document.getElementById("reg_student_name").value,
-                password: document.getElementById("reg_password").value,
-                password_confirm: document.getElementById("reg_password_confirm").value
-            };
+      // ✅ 회원가입 요청
+      function registerUser() {
+        const data = {
+          lab_name: document.getElementById("reg_lab_name").value,
+          cohort_name: document.getElementById("reg_cohort_name").value,
+          student_name: document.getElementById("reg_student_name").value,
+          password: document.getElementById("reg_password").value,
+          password_confirm: document.getElementById("reg_password_confirm")
+            .value,
+        };
 
-            fetch(`${API_BASE_URL}/auth/signup`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => alert(data.message))
-            .catch(error => console.error("Error:", error));
-        }
+        fetch(`${API_BASE_URL}/auth/signup`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        })
+          .then((response) => response.json())
+          .then((data) => alert(data.message))
+          .catch((error) => console.error("Error:", error));
+      }
 
-        // ✅ 로그인 요청
-        function loginUser() {
-            const data = {
-                lab_name: document.getElementById("login_lab_name").value,
-                cohort_name: document.getElementById("login_cohort_name").value,
-                password: document.getElementById("login_password").value
-            };
+      // ✅ 로그인 요청
+      function loginUser() {
+        const data = {
+          lab_name: document.getElementById("login_lab_name").value,
+          cohort_name: document.getElementById("login_cohort_name").value,
+          password: document.getElementById("login_password").value,
+        };
 
-            fetch(`${API_BASE_URL}/auth/login`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(data)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.token) {
-                    localStorage.setItem("token", data.token);
-                    alert("로그인 성공!");
-                } else {
-                    alert(data.message);
-                }
-            })
-            .catch(error => console.error("Error:", error));
-        }
-
-        // ✅ 게시글 작성 요청
-        function createPost() {
-            const token = localStorage.getItem("token");
-            if (!token) {
-                alert("로그인이 필요합니다.");
-                return;
-            }
-
-            const formData = new FormData();
-            formData.append("title", document.getElementById("post_title").value);
-            formData.append("category", document.getElementById("post_category").value);
-            formData.append("status", document.getElementById("post_status").checked ? "true" : "false");
-            formData.append("price", document.getElementById("post_price").value);
-            formData.append("description", document.getElementById("post_description").value);
-
-            const imageInput = document.getElementById("post_image");
-            if (imageInput.files.length > 0) {
-                formData.append("image", imageInput.files[0]);
-            }
-
-            // ✅ 모든 필드가 비어있는지 확인
-            if (!title && !category && !description && (!imageInput.files.length) && (!price || Number(price) === 0)) {
-                alert("❌ 모든 필드를 입력해주세요.");
-                return;
-            }
-
-            // ✅ 가격이 0 이상인지 확인
-            if (isNaN(price) || Number(price) < 0) {
-                alert("❌ 가격은 0 이상의 숫자로 입력해주세요.");
-                return;
-            }
-
-            fetch(`${API_BASE_URL}/posts`, {
-                method: "POST",
-                headers: { "Authorization": `Bearer ${token}` },
-                body: formData
-            })
-            .then(response => response.json().then(data => ({ status: response.status, body: data })))
-            .then(({ status, body }) => {
-                if (status === 201) {
-                alert("게시글이 등록되었습니다!");
-                console.log(body)
-                fetchPosts();  // ✅ 게시글 목록 다시 불러오기
+        fetch(`${API_BASE_URL}/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(data),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            if (data.token) {
+              localStorage.setItem("token", data.token);
+              alert("로그인 성공!");
             } else {
-            alert(`❌ 오류: ${body.message}`);
-        }
-    })
-    .catch(error => console.error("Error:", error));
-}
+              alert(data.message);
+            }
+          })
+          .catch((error) => console.error("Error:", error));
+      }
 
-        // ✅ 전체 게시글 조회
-        function fetchPosts() {
-            fetch(`${API_BASE_URL}/posts`)
-            .then(response => response.json())
-            .then(data => {
-                let postList = document.getElementById("post_list");
-                postList.innerHTML = "";
-                data.forEach(post => {
-                    let item = document.createElement("li");
-                    item.innerHTML = `<strong>${post.title}</strong> - ${post.nick_name}`;
-                    item.onclick = () => fetchPostDetail(post.id);
-                    postList.appendChild(item);
-                });
-            })
-            .catch(error => console.error("Error:", error));
+      // ✅ 게시글 작성 요청
+      function createPost() {
+        const token = localStorage.getItem("token");
+        if (!token) {
+          alert("로그인이 필요합니다.");
+          return;
         }
 
-    // ✅ 특정 게시글 조회 + 수정/삭제 버튼 렌더링
-    function fetchPostDetail(postId) {
-    const token = localStorage.getItem("token");
+        const formData = new FormData();
+        formData.append("title", document.getElementById("post_title").value);
+        formData.append(
+          "category",
+          document.getElementById("post_category").value
+        );
+        formData.append(
+          "status",
+          document.getElementById("post_status").checked ? "true" : "false"
+        );
+        formData.append("price", document.getElementById("post_price").value);
+        formData.append(
+          "description",
+          document.getElementById("post_description").value
+        );
 
-    fetch(`${API_BASE_URL}/posts/${postId}`, {
-        method: "GET",
-        headers: {
-            "Authorization": `Bearer ${token}`
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById("detail_title").innerText = data.title;
-        document.getElementById("detail_title").dataset.postId = postId;
-        document.getElementById("detail_category").innerText = data.category;
-        document.getElementById("detail_price").innerText = data.price;
-        document.getElementById("detail_description").innerText = data.description;
-        document.getElementById("detail_nickname").innerText = data.nick_name;
-        document.getElementById("detail_created_at").innerText = new Date(data.created_at).toLocaleString();
-
-        // ✅ 이미지 표시
-        const imageElement = document.getElementById("detail_image");
-        if (data.image_url) {
-            imageElement.src = `http://localhost:5001${data.image_url}`;
-            imageElement.style.display = "block";
-        } else {
-            imageElement.style.display = "none";
+        const imageInput = document.getElementById("post_image");
+        if (imageInput.files.length > 0) {
+          formData.append("image", imageInput.files[0]);
         }
 
-        // ✅ 수정/삭제 버튼 렌더링
-        const editDeleteButtons = document.getElementById("edit_delete_buttons");
-        if (data.isAuthor) {
-            editDeleteButtons.style.display = "block";  // 본인 게시글이면 버튼 표시
-        } else {
-            editDeleteButtons.style.display = "none";  // 다른 사람이면 숨김
+        // ✅ 모든 필드가 비어있는지 확인
+        if (
+          !title &&
+          !category &&
+          !description &&
+          !imageInput.files.length &&
+          (!price || Number(price) === 0)
+        ) {
+          alert("❌ 모든 필드를 입력해주세요.");
+          return;
         }
 
-        // ✅ 댓글 목록 표시
-        renderComments(data.comments, postId);
-        
-    })
-    .catch(error => console.error("Error:", error));
-}
+        // ✅ 가격이 0 이상인지 확인
+        if (isNaN(price) || Number(price) < 0) {
+          alert("❌ 가격은 0 이상의 숫자로 입력해주세요.");
+          return;
+        }
 
-        // ✅ 댓글 목록 렌더링
-        function renderComments(comments, postId) {
-            const commentList = document.getElementById("comment_list");
-            commentList.innerHTML = "";
+        fetch(`${API_BASE_URL}/posts`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        })
+          .then((response) =>
+            response
+              .json()
+              .then((data) => ({ status: response.status, body: data }))
+          )
+          .then(({ status, body }) => {
+            if (status === 201) {
+              alert("게시글이 등록되었습니다!");
+              console.log(body);
+              fetchPosts(); // ✅ 게시글 목록 다시 불러오기
+            } else {
+              alert(`❌ 오류: ${body.message}`);
+            }
+          })
+          .catch((error) => console.error("Error:", error));
+      }
 
-            comments.forEach(comment => {
-                let commentItem = document.createElement("li");
-                commentItem.innerHTML = `
-                    <strong>${comment.writer}</strong> (${new Date(comment.created_at).toLocaleString()}): ${comment.content}
+      // ✅ 전체 게시글 조회
+      function fetchPosts() {
+        fetch(`${API_BASE_URL}/posts`)
+          .then((response) => response.json())
+          .then((data) => {
+            let postList = document.getElementById("post_list");
+            postList.innerHTML = "";
+            data.forEach((post) => {
+              let item = document.createElement("li");
+              item.innerHTML = `<strong>${post.title}</strong> - ${post.nick_name}`;
+              item.onclick = () => fetchPostDetail(post.id);
+              postList.appendChild(item);
+            });
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+
+      // ✅ 특정 게시글 조회 + 수정/삭제 버튼 렌더링
+      function fetchPostDetail(postId) {
+        const token = localStorage.getItem("token");
+
+        fetch(`${API_BASE_URL}/posts/${postId}`, {
+          method: "GET",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            document.getElementById("detail_title").innerText = data.title;
+            document.getElementById("detail_title").dataset.postId = postId;
+            document.getElementById("detail_category").innerText =
+              data.category;
+            document.getElementById("detail_price").innerText = data.price;
+            document.getElementById("detail_description").innerText =
+              data.description;
+            document.getElementById("detail_nickname").innerText =
+              data.nick_name;
+            document.getElementById("detail_created_at").innerText = new Date(
+              data.created_at
+            ).toLocaleString();
+
+            // ✅ 이미지 표시
+            const imageElement = document.getElementById("detail_image");
+            if (data.image_url) {
+              imageElement.src = `http://localhost:5001${data.image_url}`;
+              imageElement.style.display = "block";
+            } else {
+              imageElement.style.display = "none";
+            }
+
+            // ✅ 수정/삭제 버튼 렌더링
+            const editDeleteButtons = document.getElementById(
+              "edit_delete_buttons"
+            );
+            if (data.isAuthor) {
+              editDeleteButtons.style.display = "block"; // 본인 게시글이면 버튼 표시
+            } else {
+              editDeleteButtons.style.display = "none"; // 다른 사람이면 숨김
+            }
+
+            // ✅ 댓글 목록 표시
+            renderComments(data.comments, postId);
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+
+      // ✅ 댓글 목록 렌더링
+      function renderComments(comments, postId) {
+        const commentList = document.getElementById("comment_list");
+        commentList.innerHTML = "";
+
+        comments.forEach((comment) => {
+          let commentItem = document.createElement("li");
+          commentItem.innerHTML = `
+                    <strong>${comment.writer}</strong> (${new Date(
+            comment.created_at
+          ).toLocaleString()}): ${comment.content}
                     <ul id="replies_${comment.id}"></ul>
                     <div id="reply_input_${comment.id}" style="display:none;">
-                        <input type="text" id="reply_content_${comment.id}" placeholder="대댓글 입력">
+                        <input type="text" id="reply_content_${
+                          comment.id
+                        }" placeholder="대댓글 입력">
                     </div>
                 `;
 
-            // ✅ "답글 달기" 버튼 동적으로 생성
-            const replyButton = document.createElement("button");
-            replyButton.innerText = "답글 달기";
-            replyButton.addEventListener("click", function () {
-                showReplyInput(postId, comment.id);
-            });
-            commentItem.appendChild(replyButton);
+          // ✅ "답글 달기" 버튼 동적으로 생성
+          const replyButton = document.createElement("button");
+          replyButton.innerText = "답글 달기";
+          replyButton.addEventListener("click", function () {
+            showReplyInput(postId, comment.id);
+          });
+          commentItem.appendChild(replyButton);
 
-            // ✅ "작성" 버튼 동적으로 생성
-            const postReplyButton = document.createElement("button");
-            postReplyButton.innerText = "작성";
-            postReplyButton.addEventListener("click", function () {
-                postReply(postId, comment.id);
-            });
+          // ✅ "작성" 버튼 동적으로 생성
+          const postReplyButton = document.createElement("button");
+          postReplyButton.innerText = "작성";
+          postReplyButton.addEventListener("click", function () {
+            postReply(postId, comment.id);
+          });
 
-            // ✅ "작성" 버튼을 reply_input 영역에 추가
-            const replyInputDiv = commentItem.querySelector(`#reply_input_${comment.id}`);
-            replyInputDiv.appendChild(postReplyButton);
+          // ✅ "작성" 버튼을 reply_input 영역에 추가
+          const replyInputDiv = commentItem.querySelector(
+            `#reply_input_${comment.id}`
+          );
+          replyInputDiv.appendChild(postReplyButton);
 
-            // ✅ 🛠 대댓글을 추가할 <ul>을 미리 생성
-            let repliesList = document.getElementById(`replies_${comment.id}`);
-            if (!repliesList) {
-                repliesList = document.createElement("ul");
-                repliesList.id = `replies_${comment.id}`;
-                commentItem.appendChild(repliesList);
-            }
+          // ✅ 🛠 대댓글을 추가할 <ul>을 미리 생성
+          let repliesList = document.getElementById(`replies_${comment.id}`);
+          if (!repliesList) {
+            repliesList = document.createElement("ul");
+            repliesList.id = `replies_${comment.id}`;
+            commentItem.appendChild(repliesList);
+          }
 
-            commentList.appendChild(commentItem);
+          commentList.appendChild(commentItem);
 
-            // ✅ 대댓글 추가
-            comment.replies.forEach(reply => {
+          // ✅ 대댓글 추가
+          comment.replies.forEach((reply) => {
             let replyItem = document.createElement("li");
-            replyItem.innerHTML = `<strong>${reply.writer}</strong>: ${reply.content} (${new Date(reply.created_at).toLocaleString()})`;
-            
+            replyItem.innerHTML = `<strong>${reply.writer}</strong>: ${
+              reply.content
+            } (${new Date(reply.created_at).toLocaleString()})`;
+
             repliesList.appendChild(replyItem);
+          });
         });
-    });
+      }
+
+      // ✅ 댓글 작성
+      function postComment() {
+        const token = localStorage.getItem("token");
+        const postId = document.getElementById("detail_title").dataset.postId;
+        const content = document.getElementById("comment_content").value.trim();
+
+        if (!content) {
+          alert("댓글 내용을 입력해주세요.");
+          return;
         }
 
-        // ✅ 댓글 작성
-        function postComment() {
-            const token = localStorage.getItem("token");
-            const postId = document.getElementById("detail_title").dataset.postId;
-            const content = document.getElementById("comment_content").value.trim();
+        fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ content }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert("댓글이 등록되었습니다!");
+            fetchPostDetail(postId); // ✅ 댓글 목록 다시 불러오기
+          })
+          .catch((error) => console.error("Error:", error));
+      }
 
-            if (!content) {
-                alert("댓글 내용을 입력해주세요.");
-                return;
-            }
+      // ✅ 대댓글 입력 필드 표시
+      function showReplyInput(postId, commentId) {
+        console.log("📌 [DEBUG] showReplyInput 실행됨:", { postId, commentId });
 
-            fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ content })
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert("댓글이 등록되었습니다!");
-                fetchPostDetail(postId);  // ✅ 댓글 목록 다시 불러오기
-            })
-            .catch(error => console.error("Error:", error));
+        const replyInputDiv = document.getElementById(
+          `reply_input_${commentId}`
+        );
+        if (replyInputDiv) {
+          replyInputDiv.style.display = "block";
+        } else {
+          console.error(
+            "❌ [ERROR] reply_input div를 찾을 수 없음:",
+            commentId
+          );
         }
+      }
 
-        // ✅ 대댓글 입력 필드 표시
-        function showReplyInput(postId, commentId) {
-            console.log("📌 [DEBUG] showReplyInput 실행됨:", { postId, commentId });
+      // ✅ 대댓글 작성
+      function postReply(postId, commentId) {
+        console.log("📌 [DEBUG] postReply 실행됨:", { postId, commentId });
 
-            const replyInputDiv = document.getElementById(`reply_input_${commentId}`);
-            if (replyInputDiv) {
-                replyInputDiv.style.display = "block";
-            } else {
-                console.error("❌ [ERROR] reply_input div를 찾을 수 없음:", commentId);
-            }
-}
+        const token = localStorage.getItem("token");
+        const content = document
+          .getElementById(`reply_content_${commentId}`)
+          .value.trim();
 
-        // ✅ 대댓글 작성
-        function postReply(postId, commentId) {
-            console.log("📌 [DEBUG] postReply 실행됨:", { postId, commentId });
-
-            const token = localStorage.getItem("token");
-            const content = document.getElementById(`reply_content_${commentId}`).value.trim();
-
-            if (!content) {
-                alert("대댓글 내용을 입력해주세요.");
-                return;
-            }
+        if (!content) {
+          alert("대댓글 내용을 입력해주세요.");
+          return;
+        }
 
         fetch(`${API_BASE_URL}/posts/${postId}/comments/${commentId}/replies`, {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json"
-            },
-                body: JSON.stringify({ content })
-            })
-            .then(response => response.json())
-            .then(data => {
-                alert("대댓글이 등록되었습니다!");
-                fetchPostDetail(postId);  // ✅ 대댓글 목록 다시 불러오기
-            })
-            .catch(error => console.error("❌ [ERROR] postReply 실패:", error));
-    }
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ content }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert("대댓글이 등록되었습니다!");
+            fetchPostDetail(postId); // ✅ 대댓글 목록 다시 불러오기
+          })
+          .catch((error) => console.error("❌ [ERROR] postReply 실패:", error));
+      }
 
-function editPost() {
-    const token = localStorage.getItem("token");
-    const postId = document.getElementById("detail_title").dataset.postId;  // ✅ 수정
+      function editPost() {
+        const token = localStorage.getItem("token");
+        const postId = document.getElementById("detail_title").dataset.postId; // ✅ 수정
 
-    if (!postId) {
-        alert("게시글 ID를 찾을 수 없습니다.");
-        return;
-    }
-
-    const newTitle = prompt("새로운 제목을 입력하세요", document.getElementById("detail_title").innerText);
-    if (!newTitle) return;
-
-    fetch(`${API_BASE_URL}/posts/${postId}`, {
-        method: "PUT",
-        headers: {
-            "Authorization": `Bearer ${token}`,
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ title: newTitle })
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert("게시글이 수정되었습니다.");
-        fetchPostDetail(postId); // ✅ 수정 후 데이터 다시 불러오기
-    })
-    .catch(error => console.error("Error:", error));
-}
-
-
-
-function deletePost() {
-    const token = localStorage.getItem("token");
-    const postId = document.getElementById("detail_title").dataset.postId;  // ✅ 수정
-
-    if (!postId) {
-        alert("게시글 ID를 찾을 수 없습니다.");
-        return;
-    }
-
-    if (!confirm("정말 삭제하시겠습니까?")) return;
-
-    fetch(`${API_BASE_URL}/posts/${postId}`, {
-        method: "DELETE",
-        headers: {
-            "Authorization": `Bearer ${token}`
+        if (!postId) {
+          alert("게시글 ID를 찾을 수 없습니다.");
+          return;
         }
-    })
-    .then(response => response.json())
-    .then(data => {
-        alert("게시글이 삭제되었습니다.");
-        window.location.href = "/"; // ✅ 삭제 후 메인 페이지 이동
-    })
-    .catch(error => console.error("Error:", error));
-}
 
-function goToMyPage() {
-    window.location.href = "http://localhost:5001/mypage";
-}
+        const newTitle = prompt(
+          "새로운 제목을 입력하세요",
+          document.getElementById("detail_title").innerText
+        );
+        if (!newTitle) return;
 
+        fetch(`${API_BASE_URL}/posts/${postId}`, {
+          method: "PUT",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ title: newTitle }),
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert("게시글이 수정되었습니다.");
+            fetchPostDetail(postId); // ✅ 수정 후 데이터 다시 불러오기
+          })
+          .catch((error) => console.error("Error:", error));
+      }
 
+      function deletePost() {
+        const token = localStorage.getItem("token");
+        const postId = document.getElementById("detail_title").dataset.postId; // ✅ 수정
+
+        if (!postId) {
+          alert("게시글 ID를 찾을 수 없습니다.");
+          return;
+        }
+
+        if (!confirm("정말 삭제하시겠습니까?")) return;
+
+        fetch(`${API_BASE_URL}/posts/${postId}`, {
+          method: "DELETE",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        })
+          .then((response) => response.json())
+          .then((data) => {
+            alert("게시글이 삭제되었습니다.");
+            window.location.href = "/"; // ✅ 삭제 후 메인 페이지 이동
+          })
+          .catch((error) => console.error("Error:", error));
+      }
+
+      function goToMyPage() {
+        window.location.href = "http://localhost:5001/mypage";
+      }
     </script>
-</head>
-<body>
+  </head>
+  <body>
     <h1>Flask API 테스트</h1>
 
     <h2>회원가입</h2>
-    <input type="text" id="reg_lab_name" placeholder="랩 명">
-    <input type="text" id="reg_cohort_name" placeholder="기수명">
-    <input type="text" id="reg_student_name" placeholder="이름">
-    <input type="password" id="reg_password" placeholder="비밀번호">
-    <input type="password" id="reg_password_confirm" placeholder="비밀번호 확인">
+    <input type="text" id="reg_lab_name" placeholder="랩 명" />
+    <input type="text" id="reg_cohort_name" placeholder="기수명" />
+    <input type="text" id="reg_student_name" placeholder="이름" />
+    <input type="password" id="reg_password" placeholder="비밀번호" />
+    <input
+      type="password"
+      id="reg_password_confirm"
+      placeholder="비밀번호 확인"
+    />
     <button onclick="registerUser()">회원가입</button>
 
     <h2>로그인</h2>
-    <input type="text" id="login_lab_name" placeholder="랩 명">
-    <input type="text" id="login_cohort_name" placeholder="기수명">
-    <input type="password" id="login_password" placeholder="비밀번호">
+    <input type="text" id="login_lab_name" placeholder="랩 명" />
+    <input type="text" id="login_cohort_name" placeholder="기수명" />
+    <input type="password" id="login_password" placeholder="비밀번호" />
     <button onclick="loginUser()">로그인</button>
 
     <button onclick="goToMyPage()">마이페이지</button>
 
     <h2>게시글 작성</h2>
-    <input type="text" id="post_title" placeholder="제목">
+    <input type="text" id="post_title" placeholder="제목" />
     <select id="post_category">
-        <option value="나눔해요">나눔해요</option>
-        <option value="필요해요">필요해요</option>
+      <option value="나눔해요">나눔해요</option>
+      <option value="필요해요">필요해요</option>
     </select>
-    <label><input type="checkbox" id="post_status"> 진행중</label>
-    <input type="number" id="post_price" placeholder="가격">
+    <label><input type="checkbox" id="post_status" /> 진행중</label>
+    <input type="number" id="post_price" placeholder="가격" />
     <textarea id="post_description" placeholder="설명"></textarea>
-    <input type="file" id="post_image">
+    <input type="file" id="post_image" />
     <button onclick="createPost()">게시글 작성</button>
 
     <h2>게시글 목록</h2>
@@ -398,31 +426,34 @@ function goToMyPage() {
     <ul id="post_list"></ul>
 
     <div id="post_detail">
-        <h2>게시글 상세 정보</h2>
-        <h3 id="detail_title"></h3>
-        <img id="detail_image" src="" alt="게시글 이미지" style="width: 300px; display: none;">
-        <p><strong>카테고리:</strong> <span id="detail_category"></span></p>
-        <p><strong>가격:</strong> <span id="detail_price"></span>원</p>
-        <p><strong>설명:</strong> <span id="detail_description"></span></p>
-        <p><strong>작성자:</strong> <span id="detail_nickname"></span></p>
-        <p><strong>작성일:</strong> <span id="detail_created_at"></span></p>
-    
-        <!-- ✅ 수정/삭제 버튼 (본인 게시글만 보이도록) -->
-        <div id="edit_delete_buttons" style="display: none;">
+      <h2>게시글 상세 정보</h2>
+      <h3 id="detail_title"></h3>
+      <img
+        id="detail_image"
+        src=""
+        alt="게시글 이미지"
+        style="width: 300px; display: none"
+      />
+      <p><strong>카테고리:</strong> <span id="detail_category"></span></p>
+      <p><strong>가격:</strong> <span id="detail_price"></span>원</p>
+      <p><strong>설명:</strong> <span id="detail_description"></span></p>
+      <p><strong>작성자:</strong> <span id="detail_nickname"></span></p>
+      <p><strong>작성일:</strong> <span id="detail_created_at"></span></p>
+
+      <!-- ✅ 수정/삭제 버튼 (본인 게시글만 보이도록) -->
+      <div id="edit_delete_buttons" style="display: none">
         <button onclick="editPost()">수정</button>
         <button onclick="deletePost()">삭제</button>
-        </div>
+      </div>
 
+      <!-- ✅ 댓글 목록 -->
+      <h3>댓글</h3>
+      <ul id="comment_list"></ul>
 
-        <!-- ✅ 댓글 목록 -->
-        <h3>댓글</h3>
-        <ul id="comment_list"></ul>
-
-        <!-- ✅ 댓글 작성 -->
-        <h4>댓글 작성</h4>
-        <textarea id="comment_content" placeholder="댓글을 입력하세요"></textarea>
-        <button onclick="postComment()">댓글 작성</button>
+      <!-- ✅ 댓글 작성 -->
+      <h4>댓글 작성</h4>
+      <textarea id="comment_content" placeholder="댓글을 입력하세요"></textarea>
+      <button onclick="postComment()">댓글 작성</button>
     </div>
-</body>
->>>>>>> aea7a234efd2cc662bd7d064029150ae0012e95e
+  </body>
 </html>
