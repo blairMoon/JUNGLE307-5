@@ -1,142 +1,83 @@
 <!DOCTYPE html>
 <html lang="ko">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>회원가입</title>
 
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}" />
-</head>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/register.css') }}"
+    />
+  </head>
 
-<body>
+  <body>
     <div class="box">
-        <div class="signup-container">
+      <div class="signup-container">
+        <img
+          src="{{ url_for('static', filename='images/logo2.png') }}"
+          alt="로고"
+          class="logo"
+        />
+        <h1 class="title">회원가입</h1>
+        <form action="{{ url_for('register') }}" method="POST" class="form-now">
+          <!-- 🔥 에러 메시지 -->
+          {% if error %}
+          <p class="error-message">{{ error }}</p>
+          {% endif %}
 
-            
-            <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="로고" class="logo">
-            <h1 class="title">회원가입</h1>
+          <div class="select-box-container">
+            <select name="lab_name" class="select-box" required>
+              <option value="" disabled selected>랩 네임 선택</option>
+              <option value="정글웹개발">정글웹개발</option>
+              <option value="게임랩">게임랩</option>
+              <option value="게임테크랩">게임테크랩</option>
+            </select>
+            <input
+              type="text"
+              name="cohort_name"
+              class="text-input"
+              placeholder="기수명 입력 EX) 8기-76"
+              required
+            />
+          </div>
 
+          <div class="input-group">
+            <label for="student_name">이름</label>
+            <input
+              type="text"
+              name="student_name"
+              class="text-input-label"
+              placeholder="이름을 입력하세요"
+              required
+            />
+          </div>
 
-            <!-- 랩 네임 선택, 기수명 입력, 중복 확인 버튼을 한 줄에 배치 -->
-            <div class="form-row">
-                <div>
-                    <div class="select-box-container">
-                        <select id="reg_lab_name" class="select-box">
-                            <option value="jungelweb" selected>랩 네임 선택</option>
-                            <option value="jungelweb">정글웹 개발</option>
-                            <option value="gamelab">게임랩</option>
-                            <option value="gametechlab">게임 테크랩</option>
-                        </select>
-                        <input type="text" id="reg_cohort_name" class="text-input" placeholder="기수명 입력 EX) 8기-76"> 
-                        <button class="check-btn">중복 확인</button>
-                    </div>
+          <div class="input-group">
+            <label for="password">비밀번호</label>
+            <input
+              type="password"
+              name="password"
+              class="text-input-label"
+              placeholder="비밀번호를 입력하세요"
+              required
+            />
+          </div>
 
-                    <!-- 이름 입력 필드와 라벨 추가 -->
-                    <div class="input-group">
-                        <label for="reg_student_name">이름</label>
-                        <input type="text" id="reg_student_name" class="text-input-label" placeholder="이름을 입력하세요">
-                    </div>
+          <div class="input-group">
+            <label for="password_confirm">비밀번호 확인</label>
+            <input
+              type="password"
+              name="password_confirm"
+              class="text-input-label"
+              placeholder="비밀번호 확인"
+              required
+            />
+          </div>
 
-                    <!-- 비밀번호 입력 필드와 라벨 추가 -->
-                    <div class="input-group">
-                        <label for="reg_password">비밀번호</label>
-                        <input type="password" id="reg_password" class="text-input-label" placeholder="비밀번호를 입력하세요">
-                    </div>
-
-                    <!-- 비밀번호 확인 필드와 라벨 추가 -->
-                    <div class="input-group">
-                        <label for="reg_password_confirm">비밀번호 확인</label>
-                        <input type="password" id="reg_password_confirm" class="text-input-label" placeholder="비밀번호 확인">
-                    </div>
-
-                    <!-- 제출 버튼 -->
-                    <button class="submit-btn">가입하기</button>
-                </div>
-                 
-                    
-                
-            </div>
-
-        </div>
+          <button type="submit" class="submit-btn">가입하기</button>
+        </form>
+      </div>
     </div>
-
-
-
-<script>
-    const API_BASE_URL = "http://localhost:5001";
-
-    function registerUser(){
-        const data = {
-            lab_name: document.getElementById("reg_lab_name").value,
-            cohort_name: document.getElementById("reg_cohort_name").value,
-            student_name: document.getElementById("reg_student_name"),value,
-            password: document.getElementById("reg_password").value,
-            password_confirm: document.getElementById("reg_password_confirm").value
-        };
-
-        fetch(`${API_BASE_URL}/auth/signup`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json"},
-            body: JSON.string(data)
-
-        })
-        .then(respose => response.json())
-        .then(data => {
-            alert(data.message);
-        })
-        .catch(error => console.error("Error:", error));
-    }
-
-    function loginUser() {
-        const data = {
-            lab_name: document.getElementById("login_lab_name").value,
-            cohort_name: document.getElementById("login_cohort_name").value,
-            password: document.getElementById("login_passowrd").value
-        };
-
-        fetch(`${API_BASE_URL}/auth/login`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(data)
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.token) {
-            localStorage.setItem("token", data.token);
-            alert("로그인 성공!");
-        } else{
-            alert(data.message);
-        }
-
-        })
-        .catch(error => console.error("Error:", error));
-    }
-    function logoutUser() {
-        localStorage.removeItem("token");
-        alert("로그아웃 완료!");
-    }
-    function checkCohortName() {
-        const cohortName = document.getElementById("reg_cohort_name").value;
-        const cohortRegex = /^[0-9]{1,2}기-[0-9]{2}$/;
-
-        if (!cohortRegex.test(cohortName)) {
-            alert("유효하지 않은 기수명 형식입니다.");
-            return;
-        }
-    }
-        fetch(`${API_BASE_URL}/auth/check-cohort?cohort_name=${cohortName}`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.exists) {
-                    alert("이미 사용 중인 닉네임입니다.");
-                } else {
-                    alert("사용 가능");
-                }
-            })
-            .catch(error => console.error("Error:", error));
-
-    
-</script>
-</body>
+  </body>
 </html>

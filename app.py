@@ -11,7 +11,7 @@ from PIL import Image  # Pillow: 이미지 처리
 import io  # 이미지 파일 처리를 위한 io 모듈
 import json
 from werkzeug.utils import secure_filename  # 파일 명 암호화
-
+from routes import routes 
 app = Flask(__name__)  # Flask 앱 생성
 app.config["SECRET_KEY"] = "JUNGLEKRAFTONWEEKZEROJUNGLEKRAFTONWEEKZERO"
 UPLOAD_FOLDER = "uploads"
@@ -20,6 +20,13 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
+
+# Blueprint 등록
+app = Flask(__name__)
+app.register_blueprint(routes)
+
+
+
 
 # ✅ 파일 확장자 검증 함수
 def allowed_file(filename):
@@ -86,7 +93,7 @@ def generate_jwt(student_name):
 import json
 from flask import Flask, render_template, abort
 
-app = Flask(__name__)
+
 
 # ✅ JSON 파일 한 번만 로딩
 with open("mock_data_30.txt", "r", encoding="utf-8") as f:
@@ -96,15 +103,6 @@ with open("mock_data_30.txt", "r", encoding="utf-8") as f:
 print("📦 JSON 로딩 성공! posts 개수:", len(mock_posts))
 
 
-# ✅ 메인 페이지 (전체 리스트)
-@app.route("/")
-def home():
-    return render_template(
-        "post/list.html", 
-        title="week00",
-        message="MainPage",
-        posts=mock_posts
-    )
 # JWT 인증 데코레이터 추가
 def jwt_required(f):
     @wraps(f)
@@ -132,14 +130,14 @@ def jwt_required(f):
 def mypage():
     return render_template("/mypage/mypage.html")
 
-@app.route("/main")
-def home():
-    return render_template("main.html")
+# @app.route("/main")
+# def home():
+#     return render_template("main.html")
 
 # 메인 페이지
-@app.route("/")
-def home():
-    return render_template("register.html", title="week00", message="MainPage")
+# @app.route("/")
+# def home():
+#     return render_template("register.html", title="week00", message="MainPage")
 def test():
     return render_template("index.html")
 
