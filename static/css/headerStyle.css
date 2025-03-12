@@ -1,8 +1,16 @@
-html,
+:root {
+  --main-color: #012754;
+  --light-blue-1: #e3eaf6;
+  --light-blue-2: #c5d4ee;
+  --light-blue-3: #a8bfe5;
+  --gray: #f5f5f5;
+  --text-color: #333;
+}html,
 body {
   height: 100%;
   margin: 0;
   padding: 0;
+  
 }
 
 body {
@@ -18,14 +26,18 @@ body {
 }
 
 body header {
+  
   padding: 0 30px 0 30px;
-  border: 1px solid black;
+  border-bottom: 1px solid var(--gray);
   display: flex;
   flex-wrap: wrap; /* 줄 바꿈 허용 */
   justify-content: space-between;
   align-items: center;
   gap: 1rem;
-  padding: 0.5rem;
+  padding: 0 0 0.5rem 0;
+}
+.contrast {
+  text-align: center;
 }
 .logo {
   width:80px;
@@ -33,13 +45,16 @@ body header {
 .contrast{
   font-style: normal;
   font-family: "Asap", sans-serif;
-  font-size: 1.2rem;
+  font-size: 1.3rem;
   font-weight: 900;
   color: #2c3e50;
   text-decoration: none;
   letter-spacing: 1px;
   border-radius:20px;
   transition: all 0.3s ease;
+}
+.contrast img {
+  vertical-align: middle;
 }
 .contrast:hover {
   background-color:#f4f4f4;
@@ -63,6 +78,20 @@ body header {
   margin-left:10px;
   font-size:35px;
 }
+.nav-center a{
+  color:#012754;
+  
+
+}
+.nav-right i {
+  color:#012754;
+
+}
+.nav-center a:hover {
+  text-decoration: none;
+}.nav-left{
+  /* border:1px solid black; */
+}
 .nav-left,
 .nav-center,
 .nav-right {
@@ -82,7 +111,9 @@ body header {
 }
 
 .nav-center a {
+  font-size:1.1rem;
   font-weight: bold;
+  text-decoration: none;
 }
 
 /* @media (max-width: 768px) {
@@ -112,3 +143,7 @@ body header {
   margin: auto;
   padding: 2rem;
 } */
+.nav-right i {
+  margin-left:0.3rem;
+  font-size:1.6rem;
+}

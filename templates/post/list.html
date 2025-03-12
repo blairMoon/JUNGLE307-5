@@ -1,0 +1,125 @@
+{% extends 'base.html' %} {% block title %} 메인 페이지 - Jungle Helper {%
+endblock %} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/listStyle.css') }}"
+/>
+{% endblock %} {% block content %}
+<div class="list-wrp">
+  <div class="write-btn-wrap">
+    <a href="{{ url_for('create') }}">
+      <button class="write-btn">게시글 작성</button>
+    </a>
+  </div>
+  <div class="card-grid">
+    {% for post in posts %}
+    <a href="/post/{{ post.id }}" class="card-link">
+      <div class="card">
+        {% if post.image_url %}
+        <img src="{{ post.image_url }}" alt="대표 이미지" />
+        {% else %}
+        <img
+          src="{{ url_for('static', filename='images/logo2.png') }}"
+          alt="대표 이미지"
+        />
+        {% endif %}
+
+        <div class="card-body">
+          <div class="badges">
+            <div>
+              <span
+                class="badge category {% if post.category == '나눔해요' %}give{% elif post.category == '필요해요' %}take{% else %}unknown{% endif %}"
+              >
+                {{ post.category }}
+              </span>
+              <span
+                class="badge status {{ 'done' if post.status == '완료' else 'ongoing' }}"
+              >
+                {{ '완료' if post.status == '완료' else 'ing' }}
+              </span>
+            </div>
+          </div>
+
+          <div class="card-title-wrp">
+            <h3 class="card-title">{{ post.title }}</h3>
+            <p class="price">{{ post.price if post.price else '가격 없음' }}</p>
+          </div>
+
+          <div class="meta">
+            <span class="author">{{ post.nick_name }}</span>
+            <span class="date">{{ post.created_at.split('T')[0] }}</span>
+          </div>
+        </div>
+      </div>
+    </a>
+    {% endfor %}
+  </div>
+
+  <!-- 페이지네이션 버튼 영역 -->
+  <div class="pagination" id="pagination"></div>
+</div>
+<!-- ✨ JavaScript 코드 여기 추가 -->
+<script>
+  const POSTS_PER_PAGE = 12;
+  const PAGES_PER_GROUP = 5;
+  const cards = document.querySelectorAll(".card");
+  const totalPages = Math.ceil(cards.length / POSTS_PER_PAGE);
+  const pagination = document.getElementById("pagination");
+  let currentPage = 1;
+
+  function showPage(page) {
+    currentPage = page;
+
+    cards.forEach((card, index) => {
+      card.style.display =
+        index >= (page - 1) * POSTS_PER_PAGE && index < page * POSTS_PER_PAGE
+          ? "block"
+          : "none";
+    });
+
+    updatePagination();
+  }
+
+  function updatePagination() {
+    pagination.innerHTML = "";
+
+    const currentGroup = Math.floor((currentPage - 1) / PAGES_PER_GROUP);
+    const startPage = currentGroup * PAGES_PER_GROUP + 1;
+    const endPage = Math.min(startPage + PAGES_PER_GROUP - 1, totalPages);
+
+    // ◀ 이전 그룹 버튼
+    if (startPage > 1) {
+      const prevBtn = document.createElement("button");
+      prevBtn.innerHTML = "❮";
+      prevBtn.addEventListener("click", () => {
+        showPage(startPage - 1);
+      });
+      pagination.appendChild(prevBtn);
+    }
+
+    // 페이지 번호 버튼
+    for (let i = startPage; i <= endPage; i++) {
+      const btn = document.createElement("button");
+      btn.textContent = i;
+      btn.setAttribute("data-page", i);
+      if (i === currentPage) btn.classList.add("active");
+      btn.addEventListener("click", () => showPage(i));
+      pagination.appendChild(btn);
+    }
+
+    // ▶ 다음 그룹 버튼
+    if (endPage < totalPages) {
+      const nextBtn = document.createElement("button");
+      nextBtn.innerHTML = "❯";
+      nextBtn.addEventListener("click", () => {
+        showPage(endPage + 1);
+      });
+      pagination.appendChild(nextBtn);
+    }
+  }
+
+  // 최초 실행
+  showPage(1);
+</script>
+
+{% endblock %}

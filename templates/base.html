@@ -3,10 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <title>{% block title %}Jungle Helper{% endblock %}</title>
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/@picocss/pico@1.*/css/pico.min.css"
-    />
     <!-- Montserrat 구글폰트 로딩 -->
     <link
       href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&display=swap"
@@ -21,6 +17,7 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/headerStyle.css') }}"
     />
+    {% block extra_css %}{% endblock %}
   </head>
 
   <body>
@@ -36,9 +33,21 @@
       </div>
 
       <div class="nav-center">
-        <a href="/posts?category=all">전체</a>
-        <a href="/posts?category=give">나눔해요</a>
-        <a href="/posts?category=need">필요해요</a>
+        <a href="/posts?category=all" class="category-link" data-category="all"
+          >전체</a
+        >
+        <a
+          href="/posts?category=give"
+          class="category-link"
+          data-category="give"
+          >나눔해요</a
+        >
+        <a
+          href="/posts?category=need"
+          class="category-link"
+          data-category="need"
+          >필요해요</a
+        >
       </div>
 
       <div class="nav-right">
@@ -52,5 +61,14 @@
     </header>
 
     <main class="container">{% block content %}{% endblock %}</main>
+
+    <!-- 📌 모든 스크립트는 여기 아래에!! -->
+    <script>
+      const baseURL = "http://127.0.0.1:5001/";
+    </script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="{{ url_for('static', filename='js/categoryFilter.js') }}"></script>
+    {% block extra_js %}{% endblock %}
   </body>
 </html>
