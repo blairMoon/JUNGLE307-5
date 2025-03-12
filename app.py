@@ -11,9 +11,10 @@ from pymongo import MongoClient  # MongoDB 연결
 from werkzeug.utils import secure_filename  # 파일 명 암호화
 import re
 from flask import flash, get_flashed_messages
-
+from flask_cors import CORS
 
 app = Flask(__name__)  # Flask 앱 생성
+CORS(app, supports_credentials=True)
 app.config["SECRET_KEY"] = "JUNGLEWEEKZEROJUNGLEWEEKZEROJUNGLEWEEKZERO"
 # Blueprint 등록
 @app.route("/")
@@ -22,16 +23,15 @@ def home():
 
     if access_token:
         try:
-            # 1. 토큰 디코딩 시도
-            payload = jwt.decode(access_token, app.config["SECRET_KEY"], algorithms=["HS256"])
-            # ✅ 토큰이 유효하면 post/list.html 렌더링
-            return render_template("post/list.html", nickname=payload["nickname"])
+            jwt.decode(access_token, app.config["SECRET_KEY"], algorithms=["HS256"])
+            return redirect(url_for("main_page"))
         except (jwt.ExpiredSignatureError, jwt.InvalidTokenError):
-            # ❌ 만료되었거나 잘못된 토큰은 쿠키 삭제
             response = make_response(render_template("auth/login.html"))
             response.delete_cookie("access_token")
             response.delete_cookie("refresh_token")
             return response
+
+    return render_template("auth/login.html")
 
     # ❌ 토큰이 없으면 로그인 페이지 보여주기
     return render_template("auth/login.html")
@@ -44,9 +44,9 @@ if not os.path.exists(UPLOAD_FOLDER):
 
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif"}
-@app.route("/list")
-def post_list():
-    return render_template("post/list.html")
+# @app.route("/list")
+# def post_list():
+#     return render_template("post/list.html")
 # ✅ 파일 확장자 검증 함수
 def allowed_file(filename):
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
@@ -368,8 +368,9 @@ def login():
     )
 
     # ✅ 쿠키에 저장 후 list 페이지 이동
-    response = make_response(redirect(url_for("post_list")))
-    response.set_cookie("access_token", access_token, httponly=True, max_age=3600)
+    response = make_response(redirect(url_for("main_page")))
+
+    response.set_cookie("access_token", access_token, httponly=True, max_age=36000)
     response.set_cookie("refresh_token", refresh_token, httponly=True, max_age=604800)
 
     return response
@@ -476,7 +477,7 @@ def main_page():
         # ✅ 카테고리 필터링 및 페이지네이션 처리
         category = request.args.get("category", "전체")  # 기본값: 전체
         page = int(request.args.get("page", 1))
-        limit = 9
+        limit = 12
         skip = (page - 1) * limit
 
         query = {} if category == "전체" else {"category": category}  # ✅ 한글 필드 유지
@@ -484,20 +485,22 @@ def main_page():
         total_count = posts_collection.count_documents(query)
 
         posts = []
+        print(posts_cursor)
         for post in posts_cursor:
             posts.append({
                 "id": str(post["_id"]),
                 "title": post["title"],
                 "image_url": post.get("image_url", "/static/images/noimage.png"),  # 기본 이미지 적용
                 "category": post["category"],  # ✅ 한글 그대로 사용
-                "status": "진행 중" if post["status"] else "완료",
+                "status": post["status"],
                 "price": "무료" if post["price"] == 0 else f"{post['price']}원",
                 "created_at": post["created_at"].strftime("%Y-%m-%d"),
                 "nick_name": post["nickname"]
             })
+        print(f"💥 카테고리: {category}, 페이지: {page}")
 
         return render_template(
-            "main.html",
+            "post/list.html",
             posts=posts,
             total_count=total_count,
             current_category=category,  # ✅ 한글 카테고리 그대로 사용
@@ -540,15 +543,16 @@ def get_post_detail(post_id):
                 reply_author = users_collection.find_one({"_id": reply["author_id"]}) if "author_id" in reply else None
                 replies.append({
                     "id": str(reply.get("_id")),
-                    "writer": reply_author["nickname"] if reply_author else "익명",
+                   "writer": comment.get("writer", "익명"),
                     "content": reply.get("content", ""),
                     "created_at": reply.get("created_at", "").strftime("%Y-%m-%d"),
                     "is_author": str(reply.get("author_id")) == str(user_id) if user_id else False
                 })
-
+            print("🔥 comments 리스트:", comments)
+            print(post)
             comments.append({
                 "id": str(comment["_id"]),
-                "writer": comment_author["nickname"] if comment_author else "익명",
+                "writer": comment.get("writer", "익명"),
                 "content": comment["content"],
                 "created_at": comment["created_at"].strftime("%Y-%m-%d"),
                 "is_author": str(comment["author_id"]) == str(user_id) if user_id else False , # ✅ 로그인하지 않은 경우에도 안전 처리
@@ -556,7 +560,7 @@ def get_post_detail(post_id):
             })
 
         return render_template(
-            "post/detailTest.html",
+            "post/detail.html",
             post={
                 "id": str(post["_id"]),
                 "title": post["title"],
@@ -695,6 +699,11 @@ def mypage():
 ######################################## 회원가입, 로그인  ########################################
 
 ######################################## 게시글  ########################################
+# @app.route('/create')
+# def create_post_route():
+#     return render_template('post/create.html')
+
+
 
 # ✅ JWT 인증 필요: 게시글 생성 (POST)
 @app.route("/api/posts", methods=["POST"])
@@ -769,6 +778,75 @@ def create_post():
 def uploaded_file(filename):
     return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
+
+
+@app.route("/create")
+def create_page():
+    mode = request.args.get("mode")
+    post_id = request.args.get("id")
+
+    post_data = None
+
+    if mode == "edit" and post_id:
+        post = posts_collection.find_one({"_id": ObjectId(post_id)})
+        if not post:
+            return "게시글을 찾을 수 없습니다.", 404
+        
+        # 게시글 데이터를 템플릿에 넘길 수 있도록 변환
+        post_data = {
+            "id": str(post["_id"]),
+            "title": post["title"],
+            "category": post["category"],
+            "price": post["price"],
+            "description": post["description"],
+            "image_url": post.get("image_url")
+        }
+    print("🌟 post_data:", post_data)
+    print("🌟 mode:", mode)
+    # 👉 post와 mode를 넘겨줘야 템플릿에서 사용할 수 있어!
+    return render_template("post/create.html", post=post_data, mode=mode)
+@app.route("/api/posts/<post_id>", methods=["PATCH"])
+@jwt_required
+def update_post(post_id):
+    user_id = get_jwt_identity()
+
+    post = posts_collection.find_one({"_id": ObjectId(post_id)})
+    if not post:
+        return jsonify({"message": "게시글이 존재하지 않습니다."}), 404
+
+    if str(post["author_id"]) != str(user_id):
+        return jsonify({"message": "수정 권한이 없습니다."}), 403
+
+    # 요청 파싱
+    data, error_response, error_status = parse_request_data()
+    if error_response:
+        return error_response, error_status
+
+    title = data.get("title", "").strip()
+    category = data.get("category", "").strip()
+    description = data.get("description", "").strip()
+    price = data.get("price", 0)
+
+    update_data = {
+        "title": title,
+        "category": category,
+        "description": description,
+        "price": price,
+    }
+
+    # 이미지가 있을 경우만 업데이트
+    if "image" in request.files:
+        image = request.files["image"]
+        if image and allowed_file(image.filename):
+            filename = secure_filename(image.filename)
+            image_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+            image.save(image_path)
+            image_url = f"/{app.config['UPLOAD_FOLDER']}/{filename}"
+            update_data["image_url"] = image_url
+
+    posts_collection.update_one({"_id": ObjectId(post_id)}, {"$set": update_data})
+
+    return jsonify({"message": "게시글이 수정되었습니다!"}), 200
     
 ######################################## 게시글  ########################################    
 
@@ -801,7 +879,7 @@ def add_comment(post_id):
     is_author = str(post["author_id"]) == str(user["_id"])
 
     # ✅ `writer` 값을 "작성자" 또는 본인 닉네임으로 설정
-    writer = "작성자" if is_author else user["nickname"]
+    writer = "작성자"  if is_author else user["nickname"]
 
     comment = {
         "post_id": ObjectId(post_id),

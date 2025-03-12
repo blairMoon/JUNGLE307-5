@@ -33,19 +33,19 @@
       </div>
 
       <div class="nav-center">
-        <a href="/posts?category=all" class="category-link" data-category="all"
+        <a
+          href="{{ url_for('main_page', category='전체') }}"
+          class="category-link"
           >전체</a
         >
         <a
-          href="/posts?category=give"
+          href="{{ url_for('main_page', category='나눔해요') }}"
           class="category-link"
-          data-category="give"
           >나눔해요</a
         >
         <a
-          href="/posts?category=need"
+          href="{{ url_for('main_page', category='필요해요') }}"
           class="category-link"
-          data-category="need"
           >필요해요</a
         >
       </div>
