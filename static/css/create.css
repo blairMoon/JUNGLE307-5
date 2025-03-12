@@ -5,309 +5,115 @@
   --light-blue-3: #a8bfe5;
   --gray: #f5f5f5;
 }
+
 body {
   overflow: hidden;
 }
+
 .post-container {
   border: 1px solid var(--light-blue-3);
   max-width: 800px;
-  margin: auto;
-  padding: 20px;
-  /* background: var(--light-blue-1); */
-  border-radius: 8px;
-  /* box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); */
-}
-.post-container {
-  margin: 30vh auto 0; /* 위에서 반쯤 내려오게 */
+  margin: 30vh auto 0;
   transform: translateY(-40%);
-}
-.form-row {
-  display: flex;
-  gap: 20px;
-  flex-wrap: wrap; /* 줄어들면 자동 줄바꿈 */
-}
-.give-container,
-.need-container {
-  height: 34px;
-  display: flex;
-  width: 30%;
-
-  align-items: center; /* 세로 가운데 정렬 핵심!! */
-  gap: 10px; /* label과 input 사이 간격 */
+  border-radius: 8px;
+  padding: 20px;
 }
 
-.give-container label,
-.need-container label {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  width: 100%;
-  cursor: pointer;
-}
-.title-flex {
-  display: flex;
-  align-items: center;
-}
-.space-between {
-  width: 80%;
-  /* border: 1px solid black; */
-  justify-content: space-between;
-  gap: 20px;
-}
-.title-label {
-  width: 30%;
-}
-.give-container input,
-.need-container input {
-  width: 40%;
-  height: 20px;
-}
-.flex {
-  /* border: 1px solid black; */
-  display: flex;
-  align-items: center;
-}
-.half-width {
-  flex: 1 1 45%; /* 반씩 나누되 반응형으로 자연스럽게 */
-  min-width: 100px;
-}
-
-.category-options {
-  margin-top: 17px;
-  display: flex;
-
-  /* flex-wrap: wrap; */
-}
 h2 {
   text-align: center;
   color: var(--main-color);
 }
 
-.form-group {
-  margin-bottom: 15px;
-}
 .form-row {
   display: flex;
-  gap: 20px;
-  flex-wrap: wrap;
-  align-items: center; /* 핵심! → 같은 높이 맞추기 */
+  align-items: center;
+  gap: 10px;
+  justify-content: space-between;
 }
 
-.half-width {
-  flex: 1 1 45%;
-  min-width: 250px;
+.title-label {
+  width: 20%;
+  text-align: left;
+}
+
+.title-input {
+  width: 60%;
 }
 
 .category-options {
   display: flex;
-  gap: 10px;
-}
-.image-div {
-  width: 100%;
-  align-items: center; /* 세로 가운데 정렬 */
-  gap: 20px;
-  flex-wrap: wrap; /* 반응형 대비 */
-}
-.image-div-son {
-  align-items: center; /* 세로 가운데 정렬 */
-  flex-wrap: wrap; /* 반응형 대비 */
-  width: 49%;
-  display: flex;
   justify-content: space-between;
-  /* border: 1px solid black; */
+  width: 20%;
+  gap: 8px;
 }
+
+.give-container,
+.need-container {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  width: 48%;
+}
+
 .give-container label,
 .need-container label {
   display: flex;
   align-items: center;
   gap: 5px;
-
-  padding: 6px 10px;
-  border-radius: 5px;
-  cursor: pointer;
-  font-size: 14px;
+  white-space: nowrap;
+  text-align: left;
+  width: 100%;
 }
 
-.category-options input[type="radio"] {
-  margin: 0;
-}
-
-label {
+.label {
   display: block;
   font-weight: bold;
-  /* margin-bottom: 5px; */
   color: var(--main-color);
 }
 
-input,
-textarea {
-  width: 100%;
+input {
+  width: 80%;
   padding: 8px;
   border: 1px solid var(--light-blue-3);
   border-radius: 4px;
   font-size: 14px;
 }
 
-.price-container {
+/* 이미지 선택 부분 */
+.image-div {
   display: flex;
   align-items: center;
   gap: 10px;
+  justify-content: space-between;
+  margin-top: 20px;
 }
 
-textarea {
-  height: 100px;
-  resize: none;
+.image-div label {
+  width: 20%;
+  text-align: left;
 }
 
-.char-count {
-  font-size: 12px;
-  color: var(--main-color);
-  text-align: right;
+.image-div .custom-file-btn-container {
+  width: 60%;
 }
 
-.submit-btn {
-  width: 100%;
-  padding: 10px;
-  background: var(--main-color);
-  color: white;
-  font-size: 16px;
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
+.image-div .empty-space {
+  width: 20%;
 }
 
-.submit-btn:hover {
-  opacity: 0.8;
-}
-.preview-wrapper {
-  margin-top: 10px;
-  text-align: center;
+input[type="file"] {
+  display: none;
 }
 
-#image-preview {
-  max-width: 100%;
-  max-height: 200px;
-  border-radius: 8px;
-  object-fit: cover;
-  border: 1px solid var(--light-blue-2);
-}
-.image-name {
-  text-align: center;
-}
 .custom-file-btn {
-  display: inline-block;
   background-color: var(--main-color);
   color: white;
   padding: 8px 16px;
-  font-size: 14px;
   border-radius: 5px;
   cursor: pointer;
-  transition: background-color 0.2s ease-in-out;
+  font-size: 14px;
 }
 
 .custom-file-btn:hover {
   opacity: 0.8;
-}
-
-.preview-wrapper {
-  margin-top: 10px;
-  text-align: center;
-}
-
-#image-preview {
-  max-width: 100%;
-  max-height: 200px;
-  border-radius: 8px;
-  object-fit: cover;
-  border: 1px solid var(--light-blue-2);
-}
-.price-row {
-  margin-top: 15px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap; /* 화면 좁을 땐 아래로 */
-}
-
-.price-row > label {
-  min-width: 50px;
-  font-weight: bold;
-  color: var(--main-color);
-}
-
-.price-row input[type="number"] {
-  width: 120px;
-  padding: 6px;
-  border-radius: 4px;
-  border: 1px solid var(--light-blue-2);
-}
-
-.free-check-label {
-  height: 30px;
-  /* border: 1px solid black; */
-  width: 200px;
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-  font-size: 1rem;
-}
-.description-label {
-  margin-bottom: 10px;
-}
-#free-check {
-  width: 20%;
-  height: 20px;
-}
-.submit-wrp {
-  display: flex;
-  justify-content: center;
-}
-.submit-btn {
-  display: flex;
-  justify-content: center;
-  width: 200px;
-  border: 1px solid black;
-}
-.price-row {
-  margin-top: 15px;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.space-between {
-  justify-content: space-between;
-  width: 75%;
-}
-
-.price-inputs {
-  display: flex;
-  align-items: center;
-  gap: 10px; /* ✅ 여기서 무료나눔을 오른쪽으로 띄움 */
-}
-
-.price-wrap {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.free-check-label {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  cursor: pointer;
-}
-textarea {
-  width: 100%;
-  height: 120px;
-  padding: 10px;
-  border: 1px solid var(--light-blue-2);
-  border-radius: 5px;
-  resize: none;
-  font-size: 14px;
-  box-sizing: border-box; /* ✅ 이거 꼭 필요! */
 }
