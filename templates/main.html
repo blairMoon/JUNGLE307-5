@@ -2,160 +2,46 @@
 {% block title %}메인 페이지{% endblock %}
 
 {% block content %}
-<!DOCTYPE html>
-<html lang="ko">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>메인 페이지</title>
-    <style>
-        .post-item {
-            display: flex;
-            align-items: center;
-            border-bottom: 1px solid #ddd;
-            padding: 10px;
-            cursor: pointer;
-        }
-        .post-image {
-            width: 50px;
-            height: 50px;
-            margin-right: 10px;
-        }
-        .badge {
-            padding: 5px;
-            border-radius: 5px;
-            color: white;
-        }
-        .red { background-color: red; }
-        .blue { background-color: blue; }
-        .active { font-weight: bold; }
-    </style>
-</head>
-<body>
-    <h1>메인 페이지</h1>
-    <nav>
-        <button onclick="changeCategory('전체')">전체</button>
-        <button onclick="changeCategory('필요해요')">필요해요</button>
-        <button onclick="changeCategory('나눔해요')">나눔해요</button>
-    </nav>
-    <div id="post_list"></div>
-    <div id="pagination"></div>
-    
-    <script>
-        const API_BASE_URL = "http://localhost:5001/api";
-        let currentPage = 1;
-        let currentCategory = "전체";
+<h1>게시글 목록</h1>
 
-        function fetchPosts(category = currentCategory, page = 1) {
-            fetch(`${API_BASE_URL}/posts?category=${category}&page=${page}`)
-                .then(response => response.json())
-                .then(data => {
-                    console.log(['json'],data)
-                    currentPage = page;
-                    currentCategory = category;
-                    renderPosts(data.posts);
-                    renderPagination(data.totalCount);
-                })
-                .catch(error => console.error("Error:", error));
-        }
+<!-- ✅ 로그인한 경우에만 "게시글 작성" 버튼 표시 -->
+{% if user_info %}
+    <div class="post-create-container">
+        <a href="{{ url_for('create_post_page') }}" class="btn btn-primary">게시글 작성</a>
+    </div>
+{% endif %}
 
-        function renderPosts(posts) {
-            const postList = document.getElementById("post_list");
-            postList.innerHTML = "";
+<!-- ✅ 카테고리 필터 (한글 유지) -->
+<nav>
+    <a href="{{ url_for('main_page', category='전체') }}" class="{{ 'active' if current_category == '전체' else '' }}">전체</a>
+    <a href="{{ url_for('main_page', category='나눔해요') }}" class="{{ 'active' if current_category == '나눔해요' else '' }}">나눔해요</a>
+    <a href="{{ url_for('main_page', category='필요해요') }}" class="{{ 'active' if current_category == '필요해요' else '' }}">필요해요</a>
+</nav>
 
-            posts.forEach(post => {
-            let item = document.createElement("div");
-            item.className = "post-item";
+<!-- ✅ 게시글 리스트 -->
+<div class="post-list">
+    {% for post in posts %}
+    <div class="post-item">
+        <img src="{{ post.image_url }}" alt="대표 이미지" class="post-image">
+        <div class="post-content">
+            <span class="badge {{ 'red' if post.category == '필요해요' else 'blue' }}">{{ post.category }}</span>
+            <h3>
+                <a href="{{ url_for('get_post_detail', post_id=post.id) }}">{{ post.title }}</a>
+            </h3>
+            <p><strong>상태:</strong> {{ post.status }}</p>
+            <p><strong>가격:</strong> {{ post.price }}</p>
+            <p><strong>작성자:</strong> {{ post.nick_name }}</p>
+            <p><strong>작성일:</strong> {{ post.created_at }}</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
 
-            // ✅ 토큰 가져오기
-        const token = localStorage.getItem("token");
-
-// ✅ 대표 이미지 (클릭 시 상세 페이지 이동)
-let image = document.createElement("img");
-image.src = post.image_url || "/static/image/noimage.png";  // 디폴트 이미지 설정
-image.alt = "대표 이미지";
-image.className = "post-image";
-image.onclick = () => {
-    if (token) {
-        location.href = `/post/${post.id}`;
-    } else {
-        alert("로그인이 필요합니다!");
-    }
-};
-
-// ✅ 게시글 내용 (제목 클릭 가능하게 수정)
-let content = document.createElement("div");
-content.className = "post-content";
-
-let badge = document.createElement("span");
-badge.className = `badge ${post.category === '필요해요' ? 'red' : 'blue'}`;
-badge.innerText = post.category;
-
-let title = document.createElement("h3");
-title.innerText = post.title;
-title.style.cursor = "pointer";
-title.onclick = () => {
-    if (token) {
-        location.href = `/post/${post.id}`;
-    } else {
-        alert("로그인이 필요합니다!");
-    }
-};
-
-let status = document.createElement("p");
-status.innerHTML = `<strong>상태:</strong> ${post.status}`;
-
-let price = document.createElement("p");
-price.innerHTML = `<strong>가격:</strong> ${post.price}`;
-
-let author = document.createElement("p");
-author.innerHTML = `<strong>작성자:</strong> ${post.nick_name}`;
-
-let createdAt = document.createElement("p");
-createdAt.innerHTML = `<strong>작성일:</strong> ${new Date(post.created_at).toLocaleString()}`;
-
-// ✅ 게시글 내용 추가
-content.appendChild(badge);
-content.appendChild(title);
-content.appendChild(status);
-content.appendChild(price);
-content.appendChild(author);
-content.appendChild(createdAt);
-
-// ✅ 아이템에 추가
-item.appendChild(image);
-item.appendChild(content);
-
-// ✅ 리스트에 추가
-postList.appendChild(item);
-    });
-}
-
-
-        function renderPagination(totalCount) {
-            const pagination = document.getElementById("pagination");
-            pagination.innerHTML = "";
-            const totalPages = Math.ceil(totalCount / 9);
-
-            for (let i = 1; i <= totalPages; i++) {
-                let btn = document.createElement("button");
-                btn.innerText = i;
-                btn.className = i === currentPage ? "active" : "";
-                btn.onclick = () => fetchPosts(currentCategory, i);
-                pagination.appendChild(btn);
-            }
-        }
-
-        function changeCategory(category) {
-            fetchPosts(category, 1);
-        }
-
-        document.addEventListener("DOMContentLoaded", () => {
-            fetchPosts();
-        });
-
-
-    </script>
-</body>
-</html>
+<!-- ✅ 페이지네이션 -->
+<div class="pagination">
+    {% set total_pages = (total_count // 9) + (1 if total_count % 9 > 0 else 0) %}
+    {% for i in range(1, total_pages + 1) %}
+        <a href="{{ url_for('main_page', category=current_category, page=i) }}" class="{{ 'active' if i == page else '' }}">{{ i }}</a>
+    {% endfor %}
+</div>
 {% endblock %}

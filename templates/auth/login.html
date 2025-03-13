@@ -20,9 +20,7 @@
       </div>
 
       <!-- Jungle Helper 텍스트 추가 -->
-      <div class="jungle-helper-text">
-        Jungle Helper
-      </div>
+      <div class="jungle-helper-text">Jungle Helper</div>
 
       <div class="login-container">
         <!-- 🔔 alert 띄우기 (flash 메시지) -->
@@ -34,43 +32,42 @@
 
         <!-- 로그인 폼 -->
         <div class="select-box-all">
-        <form action="{{ url_for('login') }}" method="POST">
-          <div class="select-box-container">
-            <select name="lab_name" class="select-box" required>
-              <option value="" disabled selected>교육명 선택</option>
-              <option value="정글">정글</option>
-              <option value="게임랩">게임랩</option>
-              <option value="게임테크랩">게임 테크랩</option>
-            </select>
+          <form action="{{ url_for('login') }}" method="POST">
+            <div class="select-box-container">
+              <select name="lab_name" class="select-box" required>
+                <option value="" disabled selected>교육명 선택</option>
+                <option value="정글">정글</option>
+                <option value="게임랩">게임랩</option>
+                <option value="게임테크랩">게임 테크랩</option>
+              </select>
+              <input
+                type="text"
+                name="cohort_name"
+                class="text-input"
+                placeholder="EX) 8기-76"
+                required
+              />
+            </div>
+
             <input
-              type="text"
-              name="cohort_name"
+              type="password"
+              name="password"
               class="text-input"
-              placeholder="EX) 8기-76"
+              placeholder="비밀번호"
               required
             />
-          </div>
 
-          <input
-            type="password"
-            name="password"
-            class="text-input"
-            placeholder="비밀번호"
-            required
-          />
+            <button type="submit" class="login-btn">로그인</button>
+            <button
+              class="signup-btn"
+              onclick="location.href='{{ url_for('register') }}'"
+            >
+              회원가입
+            </button>
+          </form>
 
-          <button type="submit" class="login-btn">로그인</button>
-          <button
-          class="signup-btn"
-          onclick="location.href='{{ url_for('register') }}'"
-        >
-          회원가입
-        </button>
-        </form>
-
-        <!-- ✅ 회원가입 버튼 다시 살려줌!!! -->
-        
-    </div>
+          <!-- ✅ 회원가입 버튼 다시 살려줌!!! -->
+        </div>
       </div>
     </div>
   </body>

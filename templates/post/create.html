@@ -8,6 +8,7 @@
   <h2>게시물 {% if mode == 'edit' %}수정{% else %}작성{% endif %}</h2>
   <form
     id="post-form"
+    method="post"
     enctype="multipart/form-data"
     data-mode="{{ mode }}"
     data-post-id="{{ post.id if post }}"
@@ -43,7 +44,7 @@
         </div>
       </div>
     </div>
-
+  
     <!-- 이미지 선택 -->
     <div class="image-div">
       <label for="image">이미지</label>
@@ -53,7 +54,7 @@
       </div>
       <div class="empty-space"></div>
     </div>
-
+    
     <!-- 이미지 미리보기 -->
     <div class="image-div">
       <label></label>
@@ -67,7 +68,7 @@
       </div>
       <div class="empty-space"></div>
     </div>
-
+    
     <!-- 가격 -->
     <div class="image-div">
       <label for="price">가격</label>

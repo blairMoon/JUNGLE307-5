@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>회원가입</title>
-
     <link
       rel="stylesheet"
       href="{{ url_for('static', filename='css/register.css') }}"
@@ -26,7 +25,7 @@
         />
         <h1 class="title">회원가입</h1>
         <form action="{{ url_for('register') }}" method="POST" class="form-now">
-          <!-- 🔥 에러 메시지 -->
+          <!-- :불: 에러 메시지 -->
           <!-- {% if error %}
           <p class="error-message">{{ error }}</p>
           {% endif %} -->

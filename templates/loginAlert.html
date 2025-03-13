@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}로그인이 필요해요! 🐥{% endblock %}
+
+{% block content %}
+<style>
+    .alert-container {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 80vh;
+        text-align: center;
+        font-family: "Comic Sans MS", "Arial", sans-serif;
+    }
+
+    .alert-box {
+        background: #ffecb3;
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.1);
+        max-width: 400px;
+    }
+
+    .alert-box img {
+        width: 100px;
+        height: auto;
+    }
+
+    .alert-title {
+        font-size: 22px;
+        font-weight: bold;
+        color: #ff4081;
+    }
+
+    .alert-message {
+        font-size: 16px;
+        margin: 15px 0;
+        color: #555;
+    }
+
+    .login-btn {
+        background: #ff4081;
+        color: white;
+        font-size: 16px;
+        padding: 10px 20px;
+        border-radius: 15px;
+        border: none;
+        cursor: pointer;
+        transition: 0.3s;
+    }
+
+    .login-btn:hover {
+        background: #e91e63;
+    }
+</style>
+
+<div class="alert-container">
+    <div class="alert-box">
+        <img src="{{ url_for('static', filename='images/jungle.svg') }}" alt="귀여운 알림">
+        <p class="alert-title">🐰 앗! 로그인이 필요해요! 🐥</p>
+        <p class="alert-message">이 페이지를 보려면 먼저 로그인해야 해요!<br> 빨리 로그인하고 놀러오세요! 💖</p>
+        <button class="login-btn" onclick="redirectToLogin()">로그인하러 가기 🚀</button>
+    </div>
+</div>
+
+<script>
+    function redirectToLogin() {
+        window.location.href = "/login";
+    }
+</script>
+{% endblock %}

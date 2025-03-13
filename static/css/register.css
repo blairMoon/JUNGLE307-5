@@ -13,7 +13,6 @@ html {
   align-items: center; /* 화면 전체에서 세로 중앙 정렬 */
   background-color: #f0f0f0; /* 배경색 */
 }
-
 /* 흰색 박스를 가로축 기준으로 중앙 정렬 */
 .box {
   display: flex;
@@ -43,13 +42,11 @@ form {
   align-items: center; /* 내부 요소 가로 중앙 정렬 */
   text-align: center;
 }
-
 /* 회원가입 제목 중앙 정렬 */
 .signup-container h2 {
   margin-bottom: 20px;
   padding: 10%;
 }
-
 /* 랩 네임 선택, 기수명 입력, 중복 확인 버튼을 한 줄에 배치 */
 .form-row {
   height: 100%;
@@ -60,7 +57,6 @@ form {
   justify-content: flex-start;
   align-items: center;
 }
-
 /* select 박스 크기 조정 */
 
 .select-box,
@@ -143,7 +139,6 @@ form {
   align-items: center; /* 수직 정렬 */
   gap: 10px; /* 라벨과 인풋 간의 간격 */
 }
-
 label {
   font-size: 16px;
   font-weight: bold;
@@ -151,14 +146,12 @@ label {
   display: block; /* 블록 요소로 만들어서 전체 너비 차지 */
   text-align: left; /* 텍스트를 왼쪽 정렬 */
 }
-
 .text-input {
   width: 70%; /* 입력 필드의 너비를 라벨의 너비와 맞춤 */
 
   border: 1px solid #ccc;
   border-radius: 5px;
 }
-
 .logo {
   width: 400px;
   height: 400px;
