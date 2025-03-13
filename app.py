@@ -605,35 +605,29 @@ def delete_post(post_id):
         return jsonify({"error": "서버 내부 오류"}), 500
 
 
-### ✅ 마이페이지 (SSR 렌더링)
 @app.route("/mypage")
 @jwt_required
 def mypage():
     try:
         user = get_current_user()
         if not user:
-            return redirect(url_for("login_page"))  # 로그인 안 된 경우 로그인 페이지로 이동
+            return redirect(url_for("login_page"))
 
         # ✅ 사용자가 작성한 게시글 목록 가져오기
         user_posts = list(posts_collection.find({"author_id": str(user["_id"])}).sort("created_at", -1))
-        for post in user_posts:
+        for index, post in enumerate(user_posts, start=1):  # ✅ 번호 부여
+            post["index"] = index
             post["id"] = str(post["_id"])
             post["created_at"] = post["created_at"].strftime("%Y-%m-%d")
+            post["status"] = post.get("status", True)  # ✅ 기본값 True 설정
 
         post_count = len(user_posts)
-
-        # ✅ 사용자가 작성한 댓글 목록 가져오기 (선택 사항)
-        user_comments = list(comments_collection.find({"author_id": str(user["_id"])}).sort("created_at", -1))
-        for comment in user_comments:
-            comment["id"] = str(comment["_id"])
-            comment["created_at"] = comment["created_at"].strftime("%Y-%m-%d")
 
         return render_template(
             "mypage/mypage.html",
             user=user,
             posts=user_posts,
-            comments=user_comments,  # 필요 없으면 제외 가능
-            post_count = post_count
+            post_count=post_count
         )
 
     except Exception as e:
@@ -875,7 +869,8 @@ def add_reply(post_id, comment_id):
 @jwt_required
 def complete_post(post_id):
     try:
-        user_id = get_jwt_identity()  # ✅ 현재 로그인한 사용자 확인
+        # ✅ 현재 로그인한 사용자 확인
+        user_id = get_jwt_identity()
 
         # ✅ 게시글 찾기
         post = posts_collection.find_one({"_id": ObjectId(post_id)})
@@ -886,21 +881,21 @@ def complete_post(post_id):
         if str(post["author_id"]) != str(user_id):
             return jsonify({"message": "본인 게시글만 완료 처리할 수 있습니다."}), 403
 
-        # ✅ 이미 완료된 경우 예외 처리
-        if not post["status"]:
-            return jsonify({"message": "이미 완료된 게시글입니다."}), 400
-
-        # ✅ 게시글 상태를 '완료'로 변경
+        # ✅ 게시글 상태 업데이트 (True → False)
+        updated_status = not post["status"]  # 현재 상태 반전
         posts_collection.update_one(
             {"_id": ObjectId(post_id)},
-            {"$set": {"status": False}}
+            {"$set": {"status": updated_status}}
         )
 
-        return jsonify({"message": "게시글이 완료되었습니다."}), 200
+        return jsonify({"message": "게시글 상태가 변경되었습니다.", "status": updated_status}), 200
 
     except Exception as e:
-        print(f"❌ [ERROR] 게시글 완료 처리 실패: {str(e)}")
+        print(f"❌ [ERROR] 게시글 상태 변경 실패: {str(e)}")
         return jsonify({"error": "서버 내부 오류 발생", "details": str(e)}), 500
+
+
+
 
 
 ########################################  마이페이지  ########################################

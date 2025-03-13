@@ -10,7 +10,7 @@
         <img id="profile_image" src="/static/images/jungle.svg" alt="프로필 이미지">
         <div class="post-count">
             <span>게시글 수</span>
-            <span id="post_count">{{ post_count }}</span>  <!-- ✅ 서버에서 받은 게시글 수 표시 -->
+            <span id="post_count">{{ post_count }}</span>
         </div>
         <div class="user-info">
             <div class="nickname">
@@ -36,16 +36,17 @@
             <tbody>
                 {% for post in posts %}
                 <tr onclick="goToPostDetail('{{ post.id }}')">
-                    <td>{{ post.index }}</td>  <!-- ✅ 순번 표시 -->
+                    <td>{{ loop.index }}</td> <!-- ✅ 자동 번호 부여 -->
                     <td>{{ post.title }}</td>
                     <td>{{ "무료" if post.price == 0 else post.price ~ "원" }}</td>
                     <td>{{ post.created_at }}</td>
                     <td>
-                        <form method="PUT" action="{{ url_for('complete_post', post_id=post.id) }}">
-                            <button type="submit" {{ "disabled" if post.status == "완료" }}>
-                                {{ post.status }}
-                            </button>
-                        </form>
+                        <button 
+                            onclick="completePost(event, '{{ post.id }}')" 
+                            class="status-btn {{ 'completed' if not post.status else 'in-progress' }}"
+                            {% if not post.status %}disabled{% endif %}>
+                            {{ "완료" if not post.status else "진행 중" }}
+                        </button>
                     </td>
                 </tr>
                 {% endfor %}
@@ -59,6 +60,35 @@
     function goToPostDetail(postId) {
         location.href = `/posts/${postId}`;
     }
+
+    function completePost(event, postId) {
+        event.stopPropagation(); // 이벤트 버블링 방지
+        const button = event.target;
+        const isCurrentlyInProgress = button.textContent.trim() === "진행 중";
+
+        fetch(`/api/posts/${postId}/complete`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" }
+        })
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === false) {
+                    button.textContent = "완료";
+                    button.disabled = true;
+                    button.classList.remove("in-progress");
+                    button.classList.add("completed");
+                } else {
+                    button.textContent = "진행 중";
+                    button.disabled = false;
+                    button.classList.remove("completed");
+                    button.classList.add("in-progress");
+                }
+            })
+            .catch(err => console.error(err));
+    }
+
+
+
 </script>
 
 {% endblock %}
