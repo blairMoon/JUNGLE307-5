@@ -3,81 +3,136 @@
   rel="stylesheet"
   href="{{ url_for('static', filename='css/create.css') }}"
 />
-
 {% endblock %} {% block content %}
 <div class="post-container">
-  <h2>게시물 작성</h2>
-  <form id="post-form" method="post" enctype="multipart/form-data">
+  <h2>게시물 {% if mode == 'edit' %}수정{% else %}작성{% endif %}</h2>
+  <form
+    id="post-form"
+    enctype="multipart/form-data"
+    data-mode="{{ mode }}"
+    data-post-id="{{ post.id if post }}"
+  >
+    <!-- 제목, 카테고리 -->
     <div class="form-row">
-      <div class="form-group half-width title-flex">
-        <label for="title" class="title-label">게시물 제목</label>
-        <input type="text" id="title" name="title" required />
+      <div class="form-group title-label">
+        <label for="title">제목</label>
       </div>
-      <div class="form-group half-width">
-        <div class="category-options">
-          <div class="give-container">
-            <label
-              >나눔해요
-              <input type="radio" name="category" value="give" required />
-            </label>
-          </div>
-          <div class="need-container">
-            <label
-              >필요해요<input
-                type="radio"
-                name="category"
-                value="need"
-                required
-            /></label>
-          </div>
+      <div class="form-group title-input">
+        <input
+          type="text"
+          id="title"
+          name="title"
+          value="{{ post.title if post }}"
+          required
+        />
+      </div>
+      <div class="form-group category-options">
+        <div class="give-container">
+          <label
+            >나눔 <input type="radio" name="category" value="나눔해요" {% if
+            post and post.category == "나눔해요" %}checked{% endif %} required
+            />
+          </label>
         </div>
-      </div>
-    </div>
-    <div class="form-group image-div">
-      <div class="image-div-son">
-        <label class="image-name" for="image">대표 이미지</label>
-
-        <!-- 커스텀 버튼 -->
-        <label for="image" class="custom-file-btn">이미지 선택하기</label>
-        <input type="file" id="image" name="image" accept="image/*" hidden />
-      </div>
-      <!-- 미리보기 -->
-      <div class="preview-wrapper">
-        <img id="image-preview" src="#" alt="미리보기" style="display: none" />
-      </div>
-
-      <div class="form-group price-row space-between">
-        <label for="price">가격</label>
-
-        <div class="price-inputs">
-          <div class="price-wrap">
-            <input type="number" id="price" name="price" min="0" />
-            <span>원</span>
-          </div>
-
-          <label class="free-check-label">
-            무료나눔
-            <input type="checkbox" id="free-check" />
+        <div class="need-container">
+          <label
+            >필요 <input type="radio" name="category" value="필요해요" {% if
+            post and post.category == "필요해요" %}checked{% endif %} required
+            />
           </label>
         </div>
       </div>
     </div>
-    <div class="form-group">
-      <label for="description" class="description-label">설명</label>
-      <textarea
-        id="description"
-        name="description"
-        maxlength="500"
-        required
-      ></textarea>
-      <p class="char-count"><span id="charCount">0</span>/500</p>
+    <!-- 이미지 선택 -->
+    <div class="image-div">
+      <label for="image">이미지</label>
+      <div class="custom-file-btn-container">
+        <label for="image" class="custom-file-btn">이미지 선택하기</label>
+        <input type="file" id="image" name="image" accept="image/*" hidden />
+      </div>
+      <div class="empty-space"></div>
     </div>
-    <div class="submit-wrp">
-      <button type="submit" class="submit-btn">작성 완료</button>
+    <!-- 이미지 미리보기 -->
+    <div class="image-div">
+      <label></label>
+      <div class="image-box">
+        <img
+          id="image-preview"
+          src="{{ post.image_url if post and post.image_url }}"
+          alt="이미지 미리보기"
+          style="max-width: 200px"
+        />
+      </div>
+      <div class="empty-space"></div>
+    </div>
+    <!-- 가격 -->
+    <div class="image-div">
+      <label for="price">가격</label>
+      <div class="price-container">
+        <input
+          type="number"
+          id="price"
+          name="price"
+          value="{{ post.price if post and post.price }}"
+          placeholder="가격을 입력하세요"
+        />
+        <span>원</span>
+        <label for="free" class="free-label"
+          >무료 <input type="checkbox" id="free" name="free" {% if post and
+          post.price == 0 %}checked{% endif %} />
+        </label>
+      </div>
+      <div class="empty-space"></div>
+    </div>
+    <!-- 설명 -->
+    <div class="image-div">
+      <label for="description">설명</label>
+      <div class="custom-file-btn-container">
+        <input
+          type="text"
+          id="description"
+          name="description"
+          value="{{ post.description if post }}"
+          placeholder="설명을 입력하세요"
+          class="description-input"
+        />
+      </div>
+      <div class="empty-space"></div>
+    </div>
+    <!-- 제출 버튼 -->
+    <div class="image-div">
+      <div></div>
+      <button type="submit" class="submit-btn">
+        {% if mode == 'edit' %}수정 완료{% else %}작성 완료{% endif %}
+      </button>
+      <div class="empty-space"></div>
     </div>
   </form>
 </div>
-
 {% endblock %} {% block extra_js %}
 <script src="{{ url_for('static', filename='js/postForm.js') }}"></script>
+<script>
+  const priceInput = document.getElementById("price");
+  const freeCheckbox = document.getElementById("free");
+  freeCheckbox.addEventListener("change", () => {
+    if (freeCheckbox.checked) {
+      priceInput.disabled = true;
+      priceInput.value = "";
+    } else {
+      priceInput.disabled = false;
+    }
+  });
+  const imageInput = document.getElementById("image");
+  const preview = document.getElementById("image-preview");
+  imageInput.addEventListener("change", function () {
+    const file = this.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
+  });
+</script>
 {% endblock %}

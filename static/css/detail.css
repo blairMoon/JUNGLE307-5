@@ -21,9 +21,15 @@
   gap: 2rem;
   flex-wrap: wrap;
 }
-
+.image-box {
+  /* border: 1px solid black; */
+  /* width: 400px; */
+  max-width: 500px;
+  min-width: 300px;
+}
 .image-box img {
-  width: 350px;
+  /* border: 1px solid black; */
+  width: 100%;
   height: auto;
   border-radius: 8px;
   object-fit: cover;
@@ -33,7 +39,29 @@
 .info-box {
   flex: 1;
 }
+/* 나눔해요 (보라) */
+.badge.category.give {
+  background-color: #615dc8;
+  color: white;
+  opacity: 0.9;
+}
 
+/* 필요해요 (빨강) */
+.badge.category.need {
+  background-color: #49ae76;
+  color: white;
+}
+
+/* 진행 중 (파랑) */
+.badge.status.ongoing {
+  background-color: #71a8fb;
+  color: white;
+}
+
+/* 완료됨 (회색) */
+.badge.status.done {
+  background-color: #9e9e9e;
+}
 .info-box .title {
   font-size: 1.8rem;
   font-weight: bold;
@@ -48,9 +76,9 @@
 .badge {
   display: inline-block;
   padding: 0.3rem 0.6rem;
-  border-radius: 999px;
+  border-radius: 10px;
   font-size: 0.8rem;
-  margin-right: 0.5rem;
+  margin-right: 0.3rem;
   background-color: var(--light-blue-2);
   color: var(--main-color);
 }

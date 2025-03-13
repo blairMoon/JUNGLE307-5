@@ -19,27 +19,34 @@ endblock %} {% block extra_css %}
     <div class="info-box">
       <h1 class="title">{{ post.title }}</h1>
       <div class="badges">
-        <span class="badge category">{{ post.category }}</span>
-        <span class="badge status"
-          >{{ '완료' if not post.status else '진행중' }}</span
+        <span
+          class="badge category {{ 'give' if post.category == '나눔해요' else 'need' }}"
         >
+          {{ post.category }}
+        </span>
+        <span class="badge status {{ 'ongoing' if post.status else 'done' }}">
+          {{ 'ing' if post.status else 'done' }}
+        </span>
       </div>
       <p class="price">{{ post.price if post.price else '무료나눔' }}</p>
       <p class="description">{{ post.description }}</p>
       <p class="author">{{ post.nick_name }}</p>
       <p class="date">{{ post.created_at }}</p>
 
-      {% if post.isAuthor %}
+      {% if is_author %}
       <div class="actions">
-        <button class="modify-btn">수정</button>
-        <button class="delete-btn">삭제</button>
+        <button onclick="location.href='/create?mode=edit&id={{ post.id }}'">
+          수정
+        </button>
+
+        <button class="delete-btn" data-post-id="{{ post.id }}">삭제</button>
       </div>
       {% endif %}
     </div>
   </div>
 
   <!-- 댓글 -->
-  <section class="comments">
+  <section class="comments" data-post-id="{{ post.id }}">
     <h2>댓글</h2>
 
     <!-- 댓글 작성 -->
@@ -54,21 +61,18 @@ endblock %} {% block extra_css %}
       <li class="comment">
         <div class="comment-wrp">
           <div class="comment-header">
-            <span class="nickname">
-              {% if comment.isAuthor %}<strong>작성자</strong>{% else %}{{
-              comment.writer }}{% endif %}
-            </span>
+            <span class="nickname"> {{ comment.writer }} </span>
             <span class="date">{{ comment.created_at }}</span>
           </div>
           <p class="comment-content">{{ comment.content }}</p>
         </div>
 
-        <!-- 답글 버튼 -->
+        <!-- 대댓글 토글 버튼 -->
         <button class="toggle-reply">답글</button>
 
-        <!-- 답글 입력 -->
-        <form class="reply-form hidden">
-          <input type="text" placeholder="답글 입력" />
+        <!-- 대댓글 입력 폼 -->
+        <form class="reply-form hidden" data-comment-id="{{ comment.id }}">
+          <input type="text" placeholder="답글 입력" class="reply-input" />
           <button type="submit">답글</button>
         </form>
 
@@ -76,10 +80,7 @@ endblock %} {% block extra_css %}
         <ul class="replies">
           {% for reply in comment.replies %}
           <li class="reply">
-            <span class="nickname">
-              {% if reply.isAuthor %}<strong>작성자</strong>{% else %}{{
-              reply.writer }}{% endif %}
-            </span>
+            <span class="nickname"> {{ reply.writer }} </span>
             <p class="reply-content">{{ reply.content }}</p>
             <span class="date">{{ reply.created_at }}</span>
           </li>
@@ -92,11 +93,39 @@ endblock %} {% block extra_css %}
 </div>
 {% endblock %} {% block extra_js %}
 <script>
-  document.querySelectorAll(".toggle-reply").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const replyForm = btn.nextElementSibling;
-      replyForm.classList.toggle("hidden");
+  document.addEventListener("DOMContentLoaded", function () {
+    document.querySelectorAll(".toggle-reply").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const replyForm = btn.parentElement.querySelector(".reply-form");
+        replyForm.classList.toggle("hidden");
+      });
+    });
+  });
+
+  $(document).ready(function () {
+    $(".delete-btn").on("click", async function () {
+      const confirmed = confirm("정말 삭제하시겠어요? 🥺");
+      if (!confirmed) return;
+
+      // postId는 HTML 어딘가에 담겨 있어야 해 (예: data-post-id 속성)
+      const postId = $(".comments").data("post-id"); // 또는 다른 방식으로 가져와도 됨
+
+      try {
+        const res = await axios.delete(`${baseURL}/api/posts/${postId}`, {
+          withCredentials: true, // ✅ JWT가 HttpOnly 쿠키에 저장되어 있다면 꼭 필요!
+        });
+
+        alert("게시물이 성공적으로 삭제되었습니다!");
+        window.location.href = "/list";
+      } catch (err) {
+        console.error("❌ 삭제 실패:", err);
+        alert(
+          err?.response?.data?.error ||
+            "삭제 중 오류가 발생했어요. 다시 시도해보세요!"
+        );
+      }
     });
   });
 </script>
+<script src="{{ url_for('static', filename='js/comments.js') }}"></script>
 {% endblock %}

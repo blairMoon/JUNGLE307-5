@@ -19,6 +19,11 @@
         />
       </div>
 
+      <!-- Jungle Helper 텍스트 추가 -->
+      <div class="jungle-helper-text">
+        Jungle Helper
+      </div>
+
       <div class="login-container">
         <!-- 🔔 alert 띄우기 (flash 메시지) -->
         {% with messages = get_flashed_messages() %} {% if messages %}
@@ -28,6 +33,7 @@
         {% endif %} {% endwith %}
 
         <!-- 로그인 폼 -->
+        <div class="select-box-all">
         <form action="{{ url_for('login') }}" method="POST">
           <div class="select-box-container">
             <select name="lab_name" class="select-box" required>
@@ -54,15 +60,17 @@
           />
 
           <button type="submit" class="login-btn">로그인</button>
-        </form>
-
-        <!-- ✅ 회원가입 버튼 다시 살려줌!!! -->
-        <button
+          <button
           class="signup-btn"
           onclick="location.href='{{ url_for('register') }}'"
         >
           회원가입
         </button>
+        </form>
+
+        <!-- ✅ 회원가입 버튼 다시 살려줌!!! -->
+        
+    </div>
       </div>
     </div>
   </body>

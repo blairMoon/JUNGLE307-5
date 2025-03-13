@@ -168,7 +168,7 @@ body {
   margin-top: 3rem;
 }
 
-.pagination button {
+.pagination .page-btn {
   font-size: 1rem;
   margin: 0 4px;
   padding: 6px 12px;
@@ -176,9 +176,20 @@ body {
   background: white;
   cursor: pointer;
   border-radius: 50%;
+  text-decoration: none;
+  color: black;
+  display: inline-block;
+  min-width: 36px;
+  text-align: center;
+  line-height: 1.5;
+  transition: all 0.2s ease;
 }
 
-.pagination button.active {
+.pagination .page-btn:hover {
+  background-color: #eee;
+}
+
+.pagination .page-btn.active {
   background-color: #00387f;
   opacity: 0.8;
   color: white;
