@@ -1,252 +1,204 @@
-<!DOCTYPE html>
-<html lang="ko">
+{% extends "base.html" %}
+{% block title %}게시글 상세보기{% endblock %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>게시글 상세정보</title>
-    <style>
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
+{% block content %}
+<div class="post-detail">
+    <h1>{{ post.title }}</h1>
+    <img src="{{ post.image_url }}" alt="게시글 이미지" class="post-image">
+    <p><strong>카테고리:</strong> {{ post.category }}</p>
+    <p><strong>상태:</strong> {{ post.status }}</p>
+    <p><strong>가격:</strong> {{ post.price }}</p>
+    <p><strong>설명:</strong> {{ post.description }}</p>
+    <p><strong>작성자:</strong> {{ post.nick_name }}</p>
+    <p><strong>작성일:</strong> {{ post.created_at }}</p>
 
-        .post-image {
-            width: 100%;
-            max-height: 300px;
-            object-fit: cover;
-        }
+    <!-- ✅ 수정/삭제 버튼 -->
+    {% if is_author %}
+    <div class="edit-delete-buttons">
+        <button onclick="editPost('{{ post.id }}')">수정</button>
+        <button onclick="deletePost('{{ post.id }}')">삭제</button>
+    </div>
+    {% endif %}
 
-        .badge {
-            padding: 5px;
-            border-radius: 5px;
-            color: white;
-        }
+    <!-- ✅ 댓글 목록 -->
+    <div class="comments">
+        <h3>댓글</h3>
+        <ul id="comment_list">
+            {% for comment in comments %}
+            <li>
+                <strong>{{ comment.writer }}</strong> ({{ comment.created_at }}):
+                <p>{{ comment.content }}</p>
+                <!-- ✅ 대댓글 작성 버튼 추가 -->
+                <button onclick="toggleReplyForm('{{ comment.id }}')">답글 달기</button>
 
-        .red {
-            background-color: red;
-        }
+                <!-- ✅ 대댓글 입력창 -->
+                <div id="reply_form_{{ comment.id }}" style="display: none;">
+                    <textarea id="reply_content_{{ comment.id }}" placeholder="대댓글을 입력하세요"></textarea>
+                    <button onclick="postReply('{{ post.id }}', '{{ comment.id }}')">등록</button>
+                </div>
 
-        .blue {
-            background-color: blue;
-        }
-
-        .comments {
-            margin-top: 20px;
-        }
-
-        .comment-item {
-            border-bottom: 1px solid #ddd;
-            padding: 10px 0;
-        }
-
-        .replies {
-            margin-left: 20px;
-        }
-
-        .hidden {
-            display: none;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="container">
-        <h1 id="detail_title">게시글 제목</h1>
-        <img id="detail_image" class="post-image" src="/static/images/noimage.png" alt="게시글 이미지">
-        <p><strong>카테고리:</strong> <span id="detail_category"></span></p>
-        <p><strong>상태:</strong> <span id="detail_status"></span></p>
-        <p><strong>가격:</strong> <span id="detail_price"></span></p>
-        <p><strong>설명:</strong> <span id="detail_description"></span></p>
-        <p><strong>작성자:</strong> <span id="detail_nickname"></span></p>
-        <p><strong>작성일:</strong> <span id="detail_created_at"></span></p>
-
-        <!-- ✅ 수정/삭제 버튼 -->
-        <div id="edit_delete_buttons" class="hidden">
-            <button onclick="editPost()">수정</button>
-            <button onclick="deletePost()">삭제</button>
-        </div>
-
-        <!-- ✅ 댓글 목록 -->
-        <div class="comments">
-            <h3>댓글</h3>
-            <ul id="comment_list"></ul>
-        </div>
-
-        <!-- ✅ 댓글 작성 -->
-        <textarea id="comment_content" placeholder="댓글을 입력하세요"></textarea>
-        <button onclick="postComment()">댓글 작성</button>
+                <!-- ✅ 대댓글 목록 -->
+                {% if comment.replies %}
+                <ul>
+                    {% for reply in comment.replies %}
+                    <li>
+                        <strong>{{ reply.writer }}</strong> ({{ reply.created_at }}):
+                        <p>{{ reply.content }}</p>
+                    </li>
+                    {% endfor %}
+                </ul>
+                {% endif %}
+            </li>
+            {% endfor %}
+        </ul>
     </div>
 
-    <script>
-        const API_BASE_URL = "http://localhost:5001/api";
-        const urlParams = new URLSearchParams(window.location.search);
-        const postId = urlParams.get("id");
-        const token = localStorage.getItem("token");
 
-        async function fetchPostDetail() {
-            const postId = window.location.pathname.split("/").pop(); // ✅ URL에서 postId 추출
+    <!-- ✅ 댓글 작성 -->
+    {% if user_info %}
+    <textarea id="comment_content" placeholder="댓글을 입력하세요"></textarea>
+    <button onclick="postComment('{{ post.id }}')">댓글 작성</button>
+    {% else %}
+    <p>로그인 후 댓글을 작성할 수 있습니다.</p>
+    {% endif %}
+</div>
 
-            if (!postId || postId === "null") {
-                console.error("잘못된 게시글 ID입니다.");
-                alert("잘못된 게시글 ID입니다.");
-                return;
-            }
+<script>
+    const API_BASE_URL = "http://localhost:5001/api";
+    const postId = "{{ post.id }}";
 
-            try {
-                const response = await fetch(`${API_BASE_URL}/posts/${postId}`, {
-                    method: "GET",
-                    headers: token ? { "Authorization": `Bearer ${token}` } : {}
-                });
+    // ✅ 쿠키에서 특정 값을 가져오는 함수
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(";").shift();
+    }
 
-                const data = await response.json();
+    // ✅ 게시글 수정 (제목, 설명, 가격)
+    function editPost(postId) {
+        const newTitle = prompt("새로운 제목을 입력하세요", "{{ post.title }}");
+        const newDescription = prompt("새로운 설명을 입력하세요", "{{ post.description }}");
+        const newPrice = prompt("새로운 가격을 입력하세요", "{{ post.price }} (숫자로 입력)");
 
-                if (!response.ok || data.error) {
-                    console.error("게시글 조회 실패:", data.error || "알 수 없는 오류");
-                    alert("게시글을 불러올 수 없습니다.");
-                    return;
-                }
-
-                document.getElementById("detail_title").innerText = data.title || "제목 없음";
-                document.getElementById("detail_category").innerText = data.category || "카테고리 없음";
-                document.getElementById("detail_status").innerText = data.status || "상태 없음";
-                document.getElementById("detail_price").innerText = data.price || "가격 정보 없음";
-                document.getElementById("detail_description").innerText = data.description || "설명 없음";
-                document.getElementById("detail_nickname").innerText = data.nick_name || "작성자 없음";
-                document.getElementById("detail_created_at").innerText = data.created_at ? new Date(data.created_at).toLocaleString() : "날짜 정보 없음";
-
-                // ✅ 이미지 처리 (없으면 기본 이미지)
-                const imageElement = document.getElementById("detail_image");
-                imageElement.src = data.image_url ? `http://localhost:5001${data.image_url}` : "/static/images/noimage.png";
-
-                // ✅ 본인 게시글이면 수정/삭제 버튼 표시
-                if (data.isAuthor) {
-                    document.getElementById("edit_delete_buttons").classList.remove("hidden");
-                }
-
-                // ✅ 댓글 렌더링
-                renderComments(data.comments || []);
-            } catch (error) {
-                console.error("Error fetching post detail:", error);
-            }
+        if (!newTitle && !newDescription && !newPrice) {
+            alert("수정할 내용을 입력하세요.");
+            return;
         }
 
-        // ✅ 페이지 로드 시 자동 실행
-        document.addEventListener("DOMContentLoaded", fetchPostDetail);
-
-        function renderComments(comments) {
-            const commentList = document.getElementById("comment_list");
-            commentList.innerHTML = "";
-
-            if (!comments.length) {
-                commentList.innerHTML = "<p>댓글이 없습니다.</p>";
-                return;
-            }
-
-            comments.forEach(comment => {
-                let commentItem = document.createElement("li");
-                commentItem.className = "comment-item";
-                commentItem.innerHTML = `
-                    <strong>${comment.writer}</strong> (${new Date(comment.created_at).toLocaleString()}):
-                    <p>${comment.content}</p>
-                    <button onclick="showReplyInput('${comment.id}')">답글</button>
-                    <ul id="replies_${comment.id}" class="replies"></ul>
-                    <div id="reply_input_${comment.id}" class="hidden">
-                        <input type="text" id="reply_content_${comment.id}" placeholder="대댓글 입력">
-                        <button onclick="postReply('${comment.id}')">작성</button>
-                    </div>
-                `;
-
-                if (comment.replies?.length) {
-                    comment.replies.forEach(reply => {
-                        let replyItem = document.createElement("li");
-                        replyItem.innerHTML = `<strong>${reply.writer}</strong>: ${reply.content} (${new Date(reply.created_at).toLocaleString()})`;
-                        commentItem.querySelector(`#replies_${comment.id}`).appendChild(replyItem);
-                    });
-                }
-
-                commentList.appendChild(commentItem);
-            });
-        }
-
-        function showReplyInput(commentId) {
-            document.getElementById(`reply_input_${commentId}`).classList.toggle("hidden");
-        }
-
-        function postComment() {
-            const postId = window.location.pathname.split("/").pop(); // ✅ URL에서 postId 가져오기
-            const content = document.getElementById("comment_content").value.trim();
-
-            if (!postId || postId === "null") {
-                alert("잘못된 게시글 ID입니다.");
-                return;
-            }
-
-            if (!content) {
-                alert("댓글 내용을 입력해주세요.");
-                return;
-            }
-
-            fetch(`${API_BASE_URL}/posts/${postId}/comments`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ content })
+        fetch(`http://localhost:5001/api/posts/${postId}`, {
+            method: "PUT",
+            headers: {
+                "Authorization": `Bearer ${getCookie("access_token")}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                title: newTitle || undefined,
+                description: newDescription || undefined,
+                price: newPrice || undefined
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.error) {
-                        alert("댓글이 등록되었습니다.");
-                        document.getElementById("comment_content").value = ""; // ✅ 입력 필드 초기화
-                        fetchPostDetail(); // ✅ 댓글 다시 불러오기
-                    } else {
-                        alert("댓글 등록 실패: " + data.error);
-                    }
-                })
-                .catch(error => console.error("Error:", error));
-        }
-
-
-        function postReply(commentId) {
-            const postId = window.location.pathname.split("/").pop(); // ✅ URL에서 postId 가져오기
-            const content = document.getElementById(`reply_content_${commentId}`).value.trim();
-
-            if (!postId || postId === "null") {
-                alert("잘못된 게시글 ID입니다.");
-                return;
-            }
-
-            if (!content) {
-                alert("답글 내용을 입력해주세요.");
-                return;
-            }
-
-            fetch(`${API_BASE_URL}/posts/${postId}/comments/${commentId}/replies`, {
-                method: "POST",
-                headers: {
-                    "Authorization": `Bearer ${token}`,
-                    "Content-Type": "application/json"
-                },
-                body: JSON.stringify({ content })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert("게시글이 수정되었습니다!");
+                    window.location.reload();
+                } else {
+                    alert("수정 실패: " + data.error);
+                }
             })
-                .then(response => response.json())
-                .then(data => {
-                    if (!data.error) {
-                        alert("답글이 등록되었습니다.");
-                        fetchPostDetail(); // ✅ 댓글 다시 불러오기
-                    } else {
-                        alert("답글 등록 실패: " + data.error);
-                    }
-                })
-                .catch(error => console.error("Error:", error));
+            .catch(error => console.error("Error:", error));
+    }
+
+
+    // ✅ 게시글 삭제
+    function deletePost(postId) {
+        if (!confirm("정말 삭제하시겠습니까?")) return;
+
+        fetch(`http://localhost:5001/api/posts/${postId}`, {
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${getCookie("access_token")}`
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert("게시글이 삭제되었습니다.");
+                    window.location.href = "/"; // ✅ 메인 페이지로 이동
+                } else {
+                    alert("삭제 실패: " + data.error);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+    }
+
+
+    // ✅ 댓글 작성
+    function postComment(postId) {
+        const commentContent = document.getElementById("comment_content").value.trim();
+        if (!commentContent) {
+            alert("댓글을 입력하세요.");
+            return;
         }
 
+        fetch(`http://localhost:5001/api/posts/${postId}/comments`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${getCookie("access_token")}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ content: commentContent })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert("댓글이 등록되었습니다!");
+                    window.location.reload();
+                } else {
+                    alert("댓글 작성 실패: " + data.error);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+    }
 
-        document.addEventListener("DOMContentLoaded", fetchPostDetail);
-    </script>
-</body>
+    // ✅ 대댓글 작성 폼 보이기/숨기기
+    function toggleReplyForm(commentId) {
+        const replyForm = document.getElementById(`reply_form_${commentId}`);
+        if (replyForm.style.display === "none" || replyForm.style.display === "") {
+            replyForm.style.display = "block";
+        } else {
+            replyForm.style.display = "none";
+        }
+    }
 
-</html>
+    // ✅ 대댓글 작성 요청
+    function postReply(postId, commentId) {
+        const replyContent = document.getElementById(`reply_content_${commentId}`).value.trim();
+        if (!replyContent) {
+            alert("대댓글 내용을 입력하세요.");
+            return;
+        }
+
+        fetch(`${API_BASE_URL}/posts/${postId}/comments/${commentId}/replies`, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${getCookie("access_token")}`,
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ content: replyContent })
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.message) {
+                    alert("대댓글이 등록되었습니다!");
+                    window.location.reload();
+                } else {
+                    alert("대댓글 작성 실패: " + data.error);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+    }
+
+</script>
+
+{% endblock %}

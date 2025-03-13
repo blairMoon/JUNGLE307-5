@@ -12,6 +12,7 @@
     border: 1px solid #ddd;
     padding: 20px;
     border-radius: 10px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     
   }
   
@@ -21,21 +22,20 @@
     object-fit: contain;
     border-radius: 50%;
     margin-left: 80px;
-    border: 1px solid #000;
+    border: 1px solid #d1d1d1;
   }
   
   .user-info {
     display: flex;
     flex-direction: column;
     align-items: center;
-    font-size: 20px;
+    font-size: 24px;
     margin-right: 80px; /* 오른쪽과의 간격 확보 */
   }
   
   .nickname {
     display: flex;
     gap: 5px;
-    margin-bottom: 5px;
     align-items: center;
   }
   
@@ -48,7 +48,7 @@
   }
   
   .post-count span {
-    margin: 5px 0;
+    margin: 15px 0;
   }
   
   .posts-section {
@@ -56,6 +56,7 @@
     margin: 40px auto;
     padding: 20px;
     border-radius: 10px;
+    border: 1px solid #ddd;
     box-shadow: 0 4px 8px rgba(0,0,0,0.1);
   }
   
