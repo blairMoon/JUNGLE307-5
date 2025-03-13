@@ -1,36 +1,49 @@
-{% extends "base.html" %}
-
-{% block extra_css %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/create.css') }}" />
-{% endblock %}
-
-{% block content %}
+{% extends "base.html" %} {% block extra_css %}
+<link
+  rel="stylesheet"
+  href="{{ url_for('static', filename='css/create.css') }}"
+/>
+{% endblock %} {% block content %}
 <div class="post-container">
-  <h2>게시물 작성</h2>
-  <form id="post-form" method="post" enctype="multipart/form-data">
-    <!-- 첫 번째 줄: 제목, 제목 입력박스, 나눔해요/필요해요 -->
+  <h2>게시물 {% if mode == 'edit' %}수정{% else %}작성{% endif %}</h2>
+  <form
+    id="post-form"
+    enctype="multipart/form-data"
+    data-mode="{{ mode }}"
+    data-post-id="{{ post.id if post }}"
+  >
+    <!-- 제목, 카테고리 -->
     <div class="form-row">
       <div class="form-group title-label">
         <label for="title">제목</label>
       </div>
       <div class="form-group title-input">
-        <input type="text" id="title" name="title" required />
+        <input
+          type="text"
+          id="title"
+          name="title"
+          value="{{ post.title if post }}"
+          required
+        />
       </div>
       <div class="form-group category-options">
         <div class="give-container">
-          <label>나눔
-            <input type="radio" name="category" value="give" required />
+          <label
+            >나눔 <input type="radio" name="category" value="나눔해요" {% if
+            post and post.category == "나눔해요" %}checked{% endif %} required
+            />
           </label>
         </div>
         <div class="need-container">
-          <label>필요
-            <input type="radio" name="category" value="need" required />
+          <label
+            >필요 <input type="radio" name="category" value="필요해요" {% if
+            post and post.category == "필요해요" %}checked{% endif %} required
+            />
           </label>
         </div>
       </div>
     </div>
-
-    <!-- 두 번째 줄: 이미지 선택 -->
+    <!-- 이미지 선택 -->
     <div class="image-div">
       <label for="image">이미지</label>
       <div class="custom-file-btn-container">
@@ -39,64 +52,87 @@
       </div>
       <div class="empty-space"></div>
     </div>
-
-    <!-- 세 번째 줄: 이미지 박스, 텍스트는 비워둠 -->
+    <!-- 이미지 미리보기 -->
     <div class="image-div">
-      <label for="image"></label> <!-- 텍스트 제거, 비워두기 -->
+      <label></label>
       <div class="image-box">
-        <img id="image-preview" src="" alt="이미지 미리보기" />
+        <img
+          id="image-preview"
+          src="{{ post.image_url if post and post.image_url }}"
+          alt="이미지 미리보기"
+          style="max-width: 200px"
+        />
       </div>
       <div class="empty-space"></div>
     </div>
-
-    <!-- 네 번째 줄: 가격 + 무료나눔 체크박스 -->
+    <!-- 가격 -->
     <div class="image-div">
       <label for="price">가격</label>
       <div class="price-container">
-        <input type="text" id="price" name="price" placeholder="가격을 입력하세요" />
+        <input
+          type="number"
+          id="price"
+          name="price"
+          value="{{ post.price if post and post.price }}"
+          placeholder="가격을 입력하세요"
+        />
         <span>원</span>
-        <label for="free" class="free-label">무료
-          <input type="checkbox" id="free" name="free" />
+        <label for="free" class="free-label"
+          >무료 <input type="checkbox" id="free" name="free" {% if post and
+          post.price == 0 %}checked{% endif %} />
         </label>
       </div>
       <div class="empty-space"></div>
     </div>
-
-    <!-- 다섯 번째 줄: 설명 텍스트 입력 상자 -->
+    <!-- 설명 -->
     <div class="image-div">
       <label for="description">설명</label>
       <div class="custom-file-btn-container">
-        <input type="text" id="description" name="description" placeholder="설명을 입력하세요" class="description-input" />
+        <input
+          type="text"
+          id="description"
+          name="description"
+          value="{{ post.description if post }}"
+          placeholder="설명을 입력하세요"
+          class="description-input"
+        />
       </div>
       <div class="empty-space"></div>
     </div>
-
+    <!-- 제출 버튼 -->
+    <div class="image-div">
+      <div></div>
+      <button type="submit" class="submit-btn">
+        {% if mode == 'edit' %}수정 완료{% else %}작성 완료{% endif %}
+      </button>
+      <div class="empty-space"></div>
+    </div>
   </form>
 </div>
-{% endblock %}
-
-{% block extra_js %}
+{% endblock %} {% block extra_js %}
 <script src="{{ url_for('static', filename='js/postForm.js') }}"></script>
 <script>
-  // "무료나눔" 체크박스를 클릭했을 때 가격 입력란을 비활성화
-  document.getElementById("free").addEventListener("change", function() {
-    const priceInput = document.getElementById("price");
-    if (this.checked) {
+  const priceInput = document.getElementById("price");
+  const freeCheckbox = document.getElementById("free");
+  freeCheckbox.addEventListener("change", () => {
+    if (freeCheckbox.checked) {
       priceInput.disabled = true;
-      priceInput.value = ""; // 체크 시 가격 입력란 초기화
+      priceInput.value = "";
     } else {
       priceInput.disabled = false;
     }
   });
-
-  // 이미지 미리보기
-  document.getElementById("image").addEventListener("change", function(event) {
-    const file = event.target.files[0];
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      document.getElementById("image-preview").src = e.target.result;
-    };
-    reader.readAsDataURL(file);
+  const imageInput = document.getElementById("image");
+  const preview = document.getElementById("image-preview");
+  imageInput.addEventListener("change", function () {
+    const file = this.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        preview.src = e.target.result;
+      };
+      reader.readAsDataURL(file);
+    }
   });
 </script>
 {% endblock %}

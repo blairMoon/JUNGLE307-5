@@ -6,120 +6,83 @@ endblock %} {% block extra_css %}
 />
 {% endblock %} {% block content %}
 <div class="list-wrp">
+  <!-- ✅ 글쓰기 버튼 -->
   <div class="write-btn-wrap">
-    <a href="{{ url_for('create_post') }}">
+    <a href="{{ url_for('create_post_page') }}">
       <button class="write-btn">게시글 작성</button>
     </a>
   </div>
+
+  <!-- ✅ 게시글 카드 목록 -->
   <div class="card-grid">
     {% for post in posts %}
-    <a href="/post/{{ post.id }}" class="card-link">
+    <a
+      href="{{ url_for('get_post_detail', post_id=post.id) }}"
+      class="card-link"
+    >
       <div class="card">
-        {% if post.image_url %}
         <img src="{{ post.image_url }}" alt="대표 이미지" />
-        {% else %}
-        <img
-          src="{{ url_for('static', filename='images/logo2.png') }}"
-          alt="대표 이미지"
-        />
-        {% endif %}
-
         <div class="card-body">
           <div class="badges">
             <div>
               <span
-                class="badge category {% if post.category == '나눔해요' %}give{% elif post.category == '필요해요' %}take{% else %}unknown{% endif %}"
+                class="badge category {% if post.category == '나눔해요' %}give{% elif post.category == '필요해요' %}take{% endif %}"
               >
                 {{ post.category }}
               </span>
               <span
-                class="badge status {{ 'done' if post.status == '완료' else 'ongoing' }}"
+                class="badge status {{ 'ongoing' if post.status else 'done' }}"
               >
-                {{ '완료' if post.status == '완료' else 'ing' }}
+                {{ 'ing' if post.status else 'done' }}
               </span>
             </div>
           </div>
-
           <div class="card-title-wrp">
             <h3 class="card-title">{{ post.title }}</h3>
-            <p class="price">{{ post.price if post.price else '가격 없음' }}</p>
+            <p class="price">{{ post.price }}</p>
           </div>
-
           <div class="meta">
             <span class="author">{{ post.nick_name }}</span>
-            <span class="date">{{ post.created_at.split('T')[0] }}</span>
+            <span class="date">{{ post.created_at }}</span>
           </div>
         </div>
       </div>
     </a>
     {% endfor %}
   </div>
+  <p class="post-count">총 {{ total_count }}개의 게시글이 있습니다.</p>
 
-  <!-- 페이지네이션 버튼 영역 -->
-  <div class="pagination" id="pagination"></div>
+  <!-- ✅ 페이지네이션 -->
+  <div class="pagination">
+    {% set POSTS_PER_PAGE = 12 %} {% set PAGES_PER_GROUP = 5 %} {% set
+    total_pages = (total_count // POSTS_PER_PAGE) + (1 if total_count %
+    POSTS_PER_PAGE else 0) %} {# ⚠️ 페이지 파라미터가 없거나 잘못된 값이면 1로
+    기본 설정 #} {% set raw_page = request.args.get('page', '1') %} {% set
+    current_page = raw_page.isdigit() and raw_page | int or 1 %} {# 🔐 최소
+    1페이지로 보장 #} {% if current_page < 1 %} {% set current_page = 1 %} {%
+    endif %} {% set current_group = (current_page - 1) // PAGES_PER_GROUP %} {%
+    set start_page = current_group * PAGES_PER_GROUP + 1 %} {% set end_page =
+    [start_page + PAGES_PER_GROUP - 1, total_pages] | min %} {# ◀ 이전 그룹 버튼
+    #} {% if start_page > 1 %}
+    <a
+      href="{{ url_for('main_page', category=current_category, page=start_page - 1) }}"
+      class="page-btn"
+      >❮</a
+    >
+    {% endif %} {# 페이지 번호들 #} {% for p in range(start_page, end_page + 1)
+    %}
+    <a
+      href="{{ url_for('main_page', category=current_category, page=p) }}"
+      class="page-btn {% if p == current_page %}active{% endif %}"
+      >{{ p }}</a
+    >
+    {% endfor %} {# ▶ 다음 그룹 버튼 #} {% if end_page < total_pages %}
+    <a
+      href="{{ url_for('main_page', category=current_category, page=end_page + 1) }}"
+      class="page-btn"
+      >❯</a
+    >
+    {% endif %}
+  </div>
 </div>
-<!-- ✨ JavaScript 코드 여기 추가 -->
-<script>
-  const POSTS_PER_PAGE = 12;
-  const PAGES_PER_GROUP = 5;
-  const cards = document.querySelectorAll(".card");
-  const totalPages = Math.ceil(cards.length / POSTS_PER_PAGE);
-  const pagination = document.getElementById("pagination");
-  let currentPage = 1;
-
-  function showPage(page) {
-    currentPage = page;
-
-    cards.forEach((card, index) => {
-      card.style.display =
-        index >= (page - 1) * POSTS_PER_PAGE && index < page * POSTS_PER_PAGE
-          ? "block"
-          : "none";
-    });
-
-    updatePagination();
-  }
-
-  function updatePagination() {
-    pagination.innerHTML = "";
-
-    const currentGroup = Math.floor((currentPage - 1) / PAGES_PER_GROUP);
-    const startPage = currentGroup * PAGES_PER_GROUP + 1;
-    const endPage = Math.min(startPage + PAGES_PER_GROUP - 1, totalPages);
-
-    // ◀ 이전 그룹 버튼
-    if (startPage > 1) {
-      const prevBtn = document.createElement("button");
-      prevBtn.innerHTML = "❮";
-      prevBtn.addEventListener("click", () => {
-        showPage(startPage - 1);
-      });
-      pagination.appendChild(prevBtn);
-    }
-
-    // 페이지 번호 버튼
-    for (let i = startPage; i <= endPage; i++) {
-      const btn = document.createElement("button");
-      btn.textContent = i;
-      btn.setAttribute("data-page", i);
-      if (i === currentPage) btn.classList.add("active");
-      btn.addEventListener("click", () => showPage(i));
-      pagination.appendChild(btn);
-    }
-
-    // ▶ 다음 그룹 버튼
-    if (endPage < totalPages) {
-      const nextBtn = document.createElement("button");
-      nextBtn.innerHTML = "❯";
-      nextBtn.addEventListener("click", () => {
-        showPage(endPage + 1);
-      });
-      pagination.appendChild(nextBtn);
-    }
-  }
-
-  // 최초 실행
-  showPage(1);
-</script>
-
 {% endblock %}

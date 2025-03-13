@@ -388,36 +388,41 @@
       }
     </script>
 
-</head>
-<body>
+  </head>
+  <body>
+
     <h1>Flask API 테스트</h1>
 
     <h2>회원가입</h2>
-    <input type="text" id="reg_lab_name" placeholder="랩 명">
-    <input type="text" id="reg_cohort_name" placeholder="기수명">
-    <input type="text" id="reg_student_name" placeholder="이름">
-    <input type="password" id="reg_password" placeholder="비밀번호">
-    <input type="password" id="reg_password_confirm" placeholder="비밀번호 확인">
+    <input type="text" id="reg_lab_name" placeholder="랩 명" />
+    <input type="text" id="reg_cohort_name" placeholder="기수명" />
+    <input type="text" id="reg_student_name" placeholder="이름" />
+    <input type="password" id="reg_password" placeholder="비밀번호" />
+    <input
+      type="password"
+      id="reg_password_confirm"
+      placeholder="비밀번호 확인"
+    />
     <button onclick="registerUser()">회원가입</button>
 
     <h2>로그인</h2>
-    <input type="text" id="login_lab_name" placeholder="랩 명">
-    <input type="text" id="login_cohort_name" placeholder="기수명">
-    <input type="password" id="login_password" placeholder="비밀번호">
+    <input type="text" id="login_lab_name" placeholder="랩 명" />
+    <input type="text" id="login_cohort_name" placeholder="기수명" />
+    <input type="password" id="login_password" placeholder="비밀번호" />
     <button onclick="loginUser()">로그인</button>
 
     <button onclick="goToMyPage()">마이페이지</button>
 
     <h2>게시글 작성</h2>
-    <input type="text" id="post_title" placeholder="제목">
+    <input type="text" id="post_title" placeholder="제목" />
     <select id="post_category">
-        <option value="나눔해요">나눔해요</option>
-        <option value="필요해요">필요해요</option>
+      <option value="나눔해요">나눔해요</option>
+      <option value="필요해요">필요해요</option>
     </select>
-    <label><input type="checkbox" id="post_status"> 진행중</label>
-    <input type="number" id="post_price" placeholder="가격">
+    <label><input type="checkbox" id="post_status" /> 진행중</label>
+    <input type="number" id="post_price" placeholder="가격" />
     <textarea id="post_description" placeholder="설명"></textarea>
-    <input type="file" id="post_image">
+    <input type="file" id="post_image" />
     <button onclick="createPost()">게시글 작성</button>
 
     <h2>게시글 목록</h2>
@@ -425,32 +430,36 @@
     <ul id="post_list"></ul>
 
     <div id="post_detail">
-        <h2>게시글 상세 정보</h2>
-        <h3 id="detail_title"></h3>
-        <img id="detail_image" src="" alt="게시글 이미지" style="width: 300px; display: none;">
-        <p><strong>카테고리:</strong> <span id="detail_category"></span></p>
-        <p><strong>가격:</strong> <span id="detail_price"></span>원</p>
-        <p><strong>설명:</strong> <span id="detail_description"></span></p>
-        <p><strong>작성자:</strong> <span id="detail_nickname"></span></p>
-        <p><strong>작성일:</strong> <span id="detail_created_at"></span></p>
-    
-        <!-- ✅ 수정/삭제 버튼 (본인 게시글만 보이도록) -->
-        <div id="edit_delete_buttons" style="display: none;">
+      <h2>게시글 상세 정보</h2>
+      <h3 id="detail_title"></h3>
+      <img
+        id="detail_image"
+        src=""
+        alt="게시글 이미지"
+        style="width: 300px; display: none"
+      />
+      <p><strong>카테고리:</strong> <span id="detail_category"></span></p>
+      <p><strong>가격:</strong> <span id="detail_price"></span>원</p>
+      <p><strong>설명:</strong> <span id="detail_description"></span></p>
+      <p><strong>작성자:</strong> <span id="detail_nickname"></span></p>
+      <p><strong>작성일:</strong> <span id="detail_created_at"></span></p>
+
+      <!-- ✅ 수정/삭제 버튼 (본인 게시글만 보이도록) -->
+      <div id="edit_delete_buttons" style="display: none">
         <button onclick="editPost()">수정</button>
         <button onclick="deletePost()">삭제</button>
-        </div>
+      </div>
 
+      <!-- ✅ 댓글 목록 -->
+      <h3>댓글</h3>
+      <ul id="comment_list"></ul>
 
-        <!-- ✅ 댓글 목록 -->
-        <h3>댓글</h3>
-        <ul id="comment_list"></ul>
-
-        <!-- ✅ 댓글 작성 -->
-        <h4>댓글 작성</h4>
-        <textarea id="comment_content" placeholder="댓글을 입력하세요"></textarea>
-        <button onclick="postComment()">댓글 작성</button>
+      <!-- ✅ 댓글 작성 -->
+      <h4>댓글 작성</h4>
+      <textarea id="comment_content" placeholder="댓글을 입력하세요"></textarea>
+      <button onclick="postComment()">댓글 작성</button>
     </div>
-</body>
 
+  </body>
 
 </html>
