@@ -1,90 +1,134 @@
 <!DOCTYPE html>
 <html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>회원가입</title>
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/register.css') }}"
+    />
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>회원가입</title>
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/register.css') }}" />
-</head>
-
-<body>
-  {% with messages = get_flashed_messages() %} {% if messages %}
-  <script>
-    alert("{{ messages[0] }}");
-  </script>
-  {% endif %} {% endwith %}
-  <div class="box">
-    <div class="signup-container">
-      <img src="{{ url_for('static', filename='images/logo2.png') }}" alt="로고" class="logo" />
-      <h1 class="title">회원가입</h1>
-      <form action="{{ url_for('register') }}" method="POST" class="form-now">
-        <!-- :불: 에러 메시지 -->
-        <!-- {% if error %}
+  <body>
+    {% with messages = get_flashed_messages() %} {% if messages %}
+    <script>
+      alert("{{ messages[0] }}");
+    </script>
+    {% endif %} {% endwith %}
+    <div class="box">
+      <div class="signup-container">
+        <img
+          src="{{ url_for('static', filename='images/logo2.png') }}"
+          alt="로고"
+          class="logo"
+        />
+        <h1 class="title">회원가입</h1>
+        <form action="{{ url_for('register') }}" method="POST" class="form-now">
+          <!-- :불: 에러 메시지 -->
+          <!-- {% if error %}
           <p class="error-message">{{ error }}</p>
           {% endif %} -->
-        <div class="select-box-container">
-          <select name="lab_name" class="select-box" required>
-            <option value="" disabled selected>랩 네임 선택</option>
-            <option value="정글">정글</option>
-            <option value="게임랩">게임랩</option>
-            <option value="게임테크랩">게임테크랩</option>
-          </select>
-          <input type="text" name="cohort_name" class="text-input" placeholder="기수명 입력 EX) 8기-76" required />
-          <button type="submit" class="jungbok-btn" id="check_duplicate_btn" >중복확인</button>
-          <script>
-            document.addEventListener("DOMContentLoaded", function () {
-              const checkDuplicateBtn = document.querySelector(".jungbok-btn");
-              checkDuplicateBtn.addEventListener("click", function (event) {
-                event.preventDefault(); // 기본 제출 방지
-        
-                // 입력값 가져오기
-                const labName = document.querySelector("[name='lab_name']").value;
-                const cohortName = document.querySelector("[name='cohort_name']").value.trim();
-        
-                if (!labName || !cohortName) {
-                  alert("❌ 랩 이름과 기수명을 입력하세요.");
-                  return;
-                }
-        
-                // API 요청 보내기
-                fetch("/api/check-duplicate", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ lab_name: labName, cohort_name: cohortName })
-                })
-                  .then(response => response.json())
-                  .then(data => {
-                    if (data.is_duplicate) {
-                      alert("🚨 이미 사용 중인 기수명입니다!");
-                    } else {
-                      alert("✅ 사용 가능한 기수명입니다!");
-                    }
-                  })
-                  .catch(error => {
-                    console.error("❌ 중복 검사 오류:", error);
-                    alert("❌ 서버 오류 발생, 다시 시도해주세요.");
-                  });
-              });
-            });
-            </script>
-        </div>
-        <div class="input-group">
-          <label for="student_name">이름</label>
-          <input type="text" name="student_name" class="text-input-label" placeholder="이름을 입력하세요" required />
-        </div>
-        <div class="input-group">
-          <label for="password">비밀번호</label>
-          <input type="password" name="password" class="text-input-label" placeholder="비밀번호를 입력하세요" required />
-        </div>
-        <div class="input-group">
-          <label for="password_confirm">비밀번호 확인</label>
-          <input type="password" name="password_confirm" class="text-input-label" placeholder="비밀번호 확인" required />
-        </div>
-        <button type="submit" class="submit-btn" >가입하기</button>
-      </form>
-    </div>
-  </div>
-</body>
 
+          <div class="select-box-container">
+            <select name="lab_name" class="select-box" required>
+              <option value="" disabled selected>랩 네임 선택</option>
+              <option value="정글">정글</option>
+              <option value="게임랩">게임랩</option>
+              <option value="게임테크랩">게임테크랩</option>
+            </select>
+            <input
+              type="text"
+              name="cohort_name"
+              class="text-input"
+              placeholder="기수명 입력 EX) 8기-76"
+              required
+            />
+            <button type="button" class="jungbok-btn">중복확인</button>
+          </div>
+
+          <div class="input-group">
+            <label for="student_name">이름</label>
+            <input
+              type="text"
+              name="student_name"
+              class="text-input-label"
+              placeholder="이름을 입력하세요"
+              required
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="password">비밀번호</label>
+            <input
+              type="password"
+              name="password"
+              class="text-input-label"
+              placeholder="비밀번호를 입력하세요"
+              required
+            />
+          </div>
+
+          <div class="input-group">
+            <label for="password_confirm">비밀번호 확인</label>
+            <input
+              type="password"
+              name="password_confirm"
+              class="text-input-label"
+              placeholder="비밀번호 확인"
+              required
+            />
+          </div>
+
+          <button type="submit" class="submit-btn">가입하기</button>
+        </form>
+      </div>
+    </div>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+      $(document).ready(function () {
+        $(".jungbok-btn").on("click", function () {
+          const labName = $("#lab_name").val().trim();
+          const cohortName = $("#cohort_name").val().trim();
+
+          // 🔸 정규식 검사
+          const cohortRegex = /^[0-9]{1,2}기-[0-9]{2}$/;
+          if (!cohortRegex.test(cohortName)) {
+            alert("❌ 유효하지 않은 기수명 형식입니다. (예: 8기-76)");
+            return;
+          }
+
+          // 🔸 값 입력 여부 확인
+          if (!labName || !cohortName) {
+            alert("❌ 랩 이름과 기수명을 모두 입력해주세요.");
+            return;
+          }
+
+          // 🔸 서버에 중복 체크 요청
+          $.ajax({
+            url: "/api/check-duplicate",
+            method: "POST",
+            contentType: "application/json",
+            data: JSON.stringify({
+              lab_name: labName,
+              cohort_name: cohortName,
+            }),
+            success: function (response) {
+              if (response.is_duplicate) {
+                alert("⚠️ 이미 사용 중인 닉네임(기수명)입니다.");
+              } else {
+                alert("✅ 사용 가능한 닉네임입니다!");
+              }
+            },
+            error: function (xhr) {
+              const errMsg =
+                xhr.responseJSON?.error || "❌ 서버 오류가 발생했습니다.";
+              alert(errMsg);
+            },
+          });
+        });
+      });
+    </script>
+  </body>
 </html>

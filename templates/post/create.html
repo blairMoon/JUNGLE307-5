@@ -44,7 +44,7 @@
         </div>
       </div>
     </div>
-  
+
     <!-- 이미지 선택 -->
     <div class="image-div">
       <label for="image">이미지</label>
@@ -54,7 +54,7 @@
       </div>
       <div class="empty-space"></div>
     </div>
-    
+
     <!-- 이미지 미리보기 -->
     <div class="image-div">
       <label></label>
@@ -62,13 +62,13 @@
         <img
           id="image-preview"
           src="{{ post.image_url if post and post.image_url }}"
-          alt="이미지 미리보기"
+          alt="이미지 미리 볼 수 있어요"
           style="max-width: 200px"
         />
       </div>
       <div class="empty-space"></div>
     </div>
-    
+
     <!-- 가격 -->
     <div class="image-div">
       <label for="price">가격</label>
@@ -104,7 +104,7 @@
       <div class="empty-space"></div>
     </div>
     <!-- 제출 버튼 -->
-    <div class="image-div">
+    <div class="image-div button-wrapper">
       <div></div>
       <button type="submit" class="submit-btn">
         {% if mode == 'edit' %}수정 완료{% else %}작성 완료{% endif %}

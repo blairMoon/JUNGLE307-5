@@ -9,7 +9,7 @@ body {
   overflow: hidden;
 }
 .post-container {
-  border: 1px solid var(--light-blue-3);
+  border: 1px solid #c0cbe4;
   max-width: 800px;
   margin: 30vh auto 0;
   transform: translateY(-40%);
@@ -158,4 +158,23 @@ input[type="text"].description-input {
   font-size: 14px;
   height: 100px; /* 높이를 키워주기 */
   resize: vertical; /* 사용자가 크기를 조정할 수 있도록 */
+}
+.submit-btn {
+  background-color: var(--main-color);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.button-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100px; /* 필요하다면 높이도 주기 */
+}
+.image-div {
+  display: flex;
+  justify-content: center; /* 가로 중앙 정렬 */
+  align-items: center; /* 세로 중앙 정렬 */
 }
