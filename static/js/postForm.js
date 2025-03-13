@@ -38,35 +38,45 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-$("#post-form").on("submit", async function (e) {
-  e.preventDefault();
-
-  const title = $("#title").val().trim();
-  const category = $("input[name='category']:checked").val();
-  const price = $("#price").val().trim();
-  const description = $("#description").val().trim();
-  const isFree = $("#free-check").is(":checked");
-
-  if (!title) return alert("제목을 입력해주세요.");
-  if (!category) return alert("카테고리를 선택해주세요.");
-  if (!isFree && (!price || isNaN(price))) return alert("가격을 입력해주세요.");
-  if (!description) return alert("설명을 입력해주세요.");
-
+$(document).ready(function () {
   const form = $("#post-form")[0];
-  const formData = new FormData(form);
+  const mode = form.dataset.mode;
+  const postId = form.dataset.postId;
+  const url =
+    mode === "edit" ? `${baseURL}api/posts/${postId}` : `${baseURL}api/posts`;
+  const method = mode === "edit" ? "patch" : "post";
 
-  try {
-    const res = await axios.post(`${baseURL}api/posts`, formData, {
-      headers: {
-        "Content-Type": "multipart/form-data",
-      },
-      withCredentials: true,
-    });
+  $("#post-form").on("submit", async function (e) {
+    e.preventDefault();
 
-    alert("게시물이 성공적으로 등록되었어요!");
-    window.location.href = "/list";
-  } catch (err) {
-    console.error("❌ 게시글 등록 실패:", err);
-    alert("게시글 등록 중 오류가 발생했어요 🥲");
-  }
+    const title = $("#title").val().trim();
+    const category = $("input[name='category']:checked").val();
+    const price = $("#free").is(":checked") ? 0 : $("#price").val();
+    const description = $("#description").val().trim();
+
+    if (!title || !category || !description) {
+      alert("제목, 카테고리, 설명은 필수입니다!");
+      return;
+    }
+
+    const formData = new FormData(form);
+
+    try {
+      const res = await axios({
+        method: method,
+        url: url,
+        data: formData,
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+        withCredentials: true,
+      });
+
+      alert(res.data.message || "성공적으로 처리되었습니다!");
+      location.href = "/list";
+    } catch (err) {
+      console.error("❌ 요청 실패:", err);
+      alert(err.response?.data?.message || "요청 중 오류 발생!");
+    }
+  });
 });
