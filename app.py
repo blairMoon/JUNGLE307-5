@@ -191,7 +191,7 @@ def register():
         except jwt.InvalidTokenError:
             pass
     if request.method == "GET":
-        return render_template("register.html")
+        return render_template("auth/register.html")
 
     # ✅ POST 요청일 때만 실행
     lab_name = request.form.get("lab_name")
